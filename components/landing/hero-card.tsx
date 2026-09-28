@@ -1,10 +1,11 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-import { ArrowRight, Volume2, VolumeX } from "lucide-react"
+import { ArrowRight, RotateCcw, Volume2, VolumeX } from "lucide-react"
 import { useFantasyMode } from "./fantasy-mode"
+
+type Face = "casino" | "fantasy"
 
 const FACE =
   "absolute inset-0 overflow-hidden rounded-[2rem] ring-1 ring-off/15 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]"
@@ -19,39 +20,66 @@ const SHINE = {
     "radial-gradient(circle at calc(50% + var(--mx, 0) * 40%) calc(50% + var(--my, 0) * 40%), rgba(255,255,255,0.14), transparent 55%)",
 }
 
-const IDLE_RATE = 0.25
-const HOVER_RATE = 1
+const CONTROL =
+  "flex h-9 w-9 items-center justify-center rounded-full bg-ink/70 text-off ring-1 ring-off/20 backdrop-blur-sm transition-all duration-300 hover:bg-ink/90 hover:text-lime focus-visible:ring-2 focus-visible:ring-lime focus-visible:outline-none"
+
+function EndCard({ visible, tagline }: { visible: boolean; tagline: string }) {
+  return (
+    <div
+      aria-hidden={!visible}
+      className={`absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ink transition-opacity duration-1000 ease-out ${
+        visible ? "opacity-100" : "pointer-events-none opacity-0"
+      }`}
+    >
+      <p className="text-4xl font-semibold tracking-tight text-off md:text-5xl">
+        scout<span className="text-lime">/</span>gaming
+      </p>
+      <p className="font-mono text-[10px] tracking-[0.25em] text-off/50 uppercase">{tagline}</p>
+    </div>
+  )
+}
 
 export function HeroCard() {
   const { fantasy, mode } = useFantasyMode()
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [hovered, setHovered] = useState(false)
+  const active: Face = fantasy ? "fantasy" : "casino"
+  const casinoRef = useRef<HTMLVideoElement>(null)
+  const fantasyRef = useRef<HTMLVideoElement>(null)
   const [muted, setMuted] = useState(true)
+  const [ended, setEnded] = useState<Record<Face, boolean>>({ casino: false, fantasy: false })
 
+  const videoFor = (face: Face) => (face === "casino" ? casinoRef.current : fantasyRef.current)
+
+  // Only the face turned toward the viewer plays, so audio never overlaps across the flip.
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-    video.playbackRate = hovered || !muted ? HOVER_RATE : IDLE_RATE
-  }, [hovered, muted])
+    videoFor(active === "casino" ? "fantasy" : "casino")?.pause()
+    if (!ended[active]) videoFor(active)?.play().catch(() => {})
+  }, [active, ended])
 
   const toggleSound = () => {
-    const video = videoRef.current
-    if (!video) return
     const nextMuted = !muted
-    video.muted = nextMuted
     setMuted(nextMuted)
-    if (!nextMuted) video.play().catch(() => {})
+    for (const face of ["casino", "fantasy"] as Face[]) {
+      const video = videoFor(face)
+      if (video) video.muted = nextMuted
+    }
+    if (!nextMuted && !ended[active]) videoFor(active)?.play().catch(() => {})
   }
+
+  const replay = () => {
+    const video = videoFor(active)
+    if (!video) return
+    video.currentTime = 0
+    setEnded((prev) => ({ ...prev, [active]: false }))
+    video.play().catch(() => {})
+  }
+
+  const markEnded = (face: Face) => () => setEnded((prev) => ({ ...prev, [face]: true }))
 
   return (
     <div className="relative shrink-0 [perspective:1600px]">
       <div aria-hidden="true" className="hero-glow absolute -inset-16 rounded-full" />
       <div className="relative [transform-style:preserve-3d] will-change-transform" style={TILT}>
-        <div
-          onPointerEnter={() => setHovered(true)}
-          onPointerLeave={() => setHovered(false)}
-          className="relative transition-transform duration-500 hover:scale-[1.03] [transform-style:preserve-3d]"
-        >
+        <div className="relative transition-transform duration-500 hover:scale-[1.03] [transform-style:preserve-3d]">
           <Link
             href={fantasy ? "#" : "/demo"}
             aria-label={fantasy ? "Läs om Scout Fantasy" : "Öppna demospelet med Astrid"}
@@ -64,18 +92,17 @@ export function HeroCard() {
             >
               <div className={FACE}>
                 <video
-                  ref={videoRef}
+                  ref={casinoRef}
                   src="/videos/astrid-card.mp4"
                   poster="/images/astrid-card-poster.jpg"
                   autoPlay
                   muted
-                  loop
                   playsInline
                   preload="auto"
+                  onEnded={markEnded("casino")}
                   aria-label="Astrid, blond croupier i svart kavaj, hälsar välkommen vid blackjackbordet"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
-                <div aria-hidden="true" className="absolute inset-0 mix-blend-soft-light" style={SHINE} />
                 <div
                   aria-hidden="true"
                   className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink to-transparent"
@@ -102,22 +129,27 @@ export function HeroCard() {
                     Spela <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                 </div>
+                <EndCard visible={ended.casino} tagline="AI Live Casino" />
+                <div aria-hidden="true" className="absolute inset-0 mix-blend-soft-light" style={SHINE} />
               </div>
 
               <div className={`${FACE} [transform:rotateY(180deg)]`}>
-                <Image
-                  src="/images/fantasy-back.png"
-                  alt="Fotboll på en upplyst gräsplan i en fullsatt arena på kvällen"
-                  fill
-                  sizes="(min-width: 768px) 440px, 330px"
-                  className="object-cover"
+                <video
+                  ref={fantasyRef}
+                  src="/videos/fantasy-card.mp4"
+                  poster="/images/fantasy-card-poster.jpg"
+                  muted
+                  playsInline
+                  preload="metadata"
+                  onEnded={markEnded("fantasy")}
+                  aria-label="Scout Fantasy: fans på arenan, spelare i realtid och odds i mobilen"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
-                <div aria-hidden="true" className="absolute inset-0 mix-blend-soft-light" style={SHINE} />
                 <div
                   aria-hidden="true"
                   className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink via-ink/70 to-transparent"
                 />
-                <div className="absolute inset-x-0 top-0 p-6">
+                <div className="absolute inset-x-0 top-0 flex justify-end p-6">
                   <span className="rounded-sm bg-lime px-2 py-1 font-mono text-[10px] font-bold tracking-widest text-ink uppercase">
                     Scout Fantasy
                   </span>
@@ -135,25 +167,36 @@ export function HeroCard() {
                     Läs mer <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                 </div>
+                <EndCard visible={ended.fantasy} tagline="Spot the play. Power the platform." />
+                <div aria-hidden="true" className="absolute inset-0 mix-blend-soft-light" style={SHINE} />
               </div>
             </div>
           </Link>
 
-          <button
-            type="button"
-            onClick={toggleSound}
-            aria-label={muted ? "Sätt på ljudet i videon" : "Stäng av ljudet i videon"}
-            aria-pressed={!muted}
-            className={`absolute top-6 left-6 flex h-9 w-9 items-center justify-center rounded-full bg-ink/70 text-off ring-1 ring-off/20 backdrop-blur-sm transition-all duration-300 hover:bg-ink/90 hover:text-lime focus-visible:ring-2 focus-visible:ring-lime focus-visible:outline-none ${
-              fantasy ? "pointer-events-none opacity-0" : "opacity-100"
-            }`}
-          >
-            {muted ? (
-              <VolumeX className="h-4 w-4" aria-hidden="true" />
-            ) : (
-              <Volume2 className="h-4 w-4" aria-hidden="true" />
-            )}
-          </button>
+          <div className="absolute top-6 left-6 flex gap-2">
+            <button
+              type="button"
+              onClick={toggleSound}
+              aria-label={muted ? "Sätt på ljudet i videon" : "Stäng av ljudet i videon"}
+              aria-pressed={!muted}
+              className={CONTROL}
+            >
+              {muted ? (
+                <VolumeX className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Volume2 className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={replay}
+              aria-label="Spela videon igen"
+              tabIndex={ended[active] ? 0 : -1}
+              className={`${CONTROL} ${ended[active] ? "opacity-100" : "pointer-events-none opacity-0"}`}
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

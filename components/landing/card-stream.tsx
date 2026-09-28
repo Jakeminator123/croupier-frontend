@@ -29,7 +29,7 @@ const STREAM: StreamItem[] = [
   { item: { kind: "card", rank: "K", suit: "hearts" }, top: "20%", size: "w-16 md:w-24", dur: 26, delay: -14, r0: -20, r1: 50, depth: "far" },
   { item: { kind: "queen", suit: "spades" }, top: "26%", size: "w-28 md:w-40", dur: 30, delay: -20, r0: -14, r1: 10, depth: "near" },
   { item: { kind: "chip", value: 25 }, top: "36%", size: "w-10 md:w-14", dur: 15, delay: -11, r0: 0, r1: -540, depth: "far" },
-  { item: { kind: "queen", suit: "hearts" }, top: "44%", size: "w-24 md:w-36", dur: 27, delay: -5, r0: -20, r1: 24, depth: "near" },
+  { item: { kind: "queen", suit: "hearts" }, top: "44%", size: "w-24 md:w-36", dur: 27, delay: -75, r0: -20, r1: 24, depth: "near" },
   { item: { kind: "card", rank: "10", suit: "clubs" }, top: "52%", size: "w-14 md:w-20", dur: 28, delay: -8, r0: -10, r1: 60, depth: "far" },
   { item: { kind: "chip", value: 500 }, top: "60%", size: "w-14 md:w-20", dur: 19, delay: -3, r0: 0, r1: 900, depth: "near" },
   { item: { kind: "card", rank: "J", suit: "spades" }, top: "68%", size: "w-20 md:w-28", dur: 21, delay: -19, r0: -50, r1: 25, depth: "mid" },
@@ -174,7 +174,7 @@ export function CardStream() {
             ref={(el) => {
               trackRefs.current[i] = el
             }}
-            className="animate-stream"
+            className={s.item.kind === "queen" ? "animate-stream-rare" : "animate-stream"}
             style={
               {
                 "--dur": `${s.dur}s`,

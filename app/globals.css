@@ -310,6 +310,25 @@
   animation-delay: var(--delay, 0s);
 }
 
+/* Same traversal as `stream`, but parked off-screen for 80% of a five-times-longer cycle. */
+@keyframes stream-rare {
+  0% {
+    transform: translate3d(-25vw, 110vh, 0) rotate(var(--r0, -30deg));
+  }
+  20% {
+    transform: translate3d(115vw, -30vh, 0) rotate(var(--r1, 40deg));
+  }
+  20.01%,
+  100% {
+    transform: translate3d(-25vw, 110vh, 0) rotate(var(--r0, -30deg));
+  }
+}
+
+.animate-stream-rare {
+  animation: stream-rare calc(var(--dur, 18s) * 5) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
 @keyframes trail {
   to {
     stroke-dashoffset: 0;
@@ -401,6 +420,7 @@
   .animate-marquee,
   .animate-pulse-scale,
   .animate-stream,
+  .animate-stream-rare,
   .animate-trail,
   .animate-chip-spin {
     animation: none;
