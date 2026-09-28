@@ -85,6 +85,145 @@
   background-size: 64px 64px;
 }
 
+/* Perspective floor: infinite tables (casino) / striped pitch (fantasy). */
+.floor-stage {
+  perspective: 900px;
+  perspective-origin: 50% 40%;
+  overflow: hidden;
+}
+
+/* Rotated from its bottom edge so the top recedes toward the vanishing point. */
+.floor-plane {
+  position: absolute;
+  left: -100%;
+  right: -100%;
+  bottom: -6%;
+  height: 340%;
+  transform-origin: 50% 100%;
+  transform: rotateX(72deg);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 45%, #000 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 45%, #000 92%, transparent 100%);
+}
+
+.floor-layer {
+  position: absolute;
+  inset: 0;
+  transition: opacity 900ms ease;
+}
+
+.floor-tables {
+  opacity: 0.42;
+  background-image:
+    radial-gradient(ellipse 30% 11% at 50% 58%, rgba(236, 206, 150, 0.6) 0%, rgba(236, 206, 150, 0.2) 45%, transparent 72%),
+    radial-gradient(ellipse 22% 6% at 50% 58%, rgba(255, 240, 210, 0.7) 0%, transparent 70%),
+    radial-gradient(ellipse 5% 7% at 50% 40%, rgba(120, 110, 100, 0.5) 0%, transparent 100%),
+    linear-gradient(to bottom, transparent 28%, rgba(210, 176, 120, 0.12) 29%, rgba(210, 176, 120, 0.12) 33%, transparent 34%);
+  background-size: 190px 170px;
+  background-position: 0 0;
+  animation: floor-scroll 24s linear infinite;
+}
+
+.floor-pitch {
+  opacity: 0;
+  background-image:
+    linear-gradient(to right, rgba(214, 255, 58, 0.26) 0 3px, transparent 3px),
+    repeating-linear-gradient(to bottom, rgba(120, 220, 120, 0.1) 0 120px, rgba(60, 160, 80, 0.15) 120px 240px);
+  background-size:
+    100% 100%,
+    100% 240px;
+  background-position:
+    50% 0,
+    0 0;
+  background-repeat: no-repeat, repeat;
+  animation: floor-scroll-pitch 20s linear infinite;
+}
+
+.floor-pitch::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 22%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  border: 3px solid rgba(214, 255, 58, 0.26);
+}
+
+.floor-pitch::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  top: 6%;
+  bottom: -2%;
+  border: 3px solid rgba(214, 255, 58, 0.2);
+  border-bottom: 0;
+}
+
+.floor-horizon {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 14% at 50% 42%, rgba(200, 164, 106, 0.18), transparent 70%),
+    linear-gradient(to bottom, rgba(10, 11, 13, 0) 30%, rgba(10, 11, 13, 0.55) 41%, rgba(10, 11, 13, 0) 52%);
+  transition: opacity 900ms ease;
+}
+
+[data-mode="fantasy"] .floor-tables {
+  opacity: 0;
+}
+[data-mode="fantasy"] .floor-pitch {
+  opacity: 0.85;
+}
+[data-mode="fantasy"] .floor-horizon {
+  opacity: 0.3;
+}
+[data-mode="live"] .floor-tables {
+  opacity: 0.9;
+}
+
+@keyframes floor-scroll {
+  to {
+    background-position: 0 170px;
+  }
+}
+
+@keyframes floor-scroll-pitch {
+  to {
+    background-position:
+      50% 0,
+      0 240px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floor-tables,
+  .floor-pitch {
+    animation: none;
+  }
+}
+
+/* Static glow behind the hero card, kept off the animated element so the
+   drop-shadow filter is not re-rasterised every frame. */
+.hero-glow {
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 50%, rgba(214, 255, 58, 0.16), transparent 70%),
+    radial-gradient(ellipse 80% 80% at 50% 55%, rgba(200, 164, 106, 0.28), transparent 70%);
+  filter: blur(40px);
+  transition: background 700ms ease;
+}
+[data-mode="live"] .hero-glow {
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 50%, rgba(230, 191, 110, 0.32), transparent 70%),
+    radial-gradient(ellipse 80% 80% at 50% 55%, rgba(200, 120, 60, 0.28), transparent 70%);
+}
+[data-mode="fantasy"] .hero-glow {
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 50%, rgba(214, 255, 58, 0.34), transparent 70%),
+    radial-gradient(ellipse 80% 80% at 50% 55%, rgba(80, 200, 90, 0.26), transparent 70%);
+}
+
 .felt {
   background:
     radial-gradient(ellipse at 50% 0%, oklch(0.32 0.012 60) 0%, transparent 60%),
@@ -187,7 +326,6 @@
 .glow-lime {
   filter: drop-shadow(0 0 30px rgba(214, 255, 58, 0.25)) drop-shadow(0 0 80px rgba(200, 164, 106, 0.3))
     drop-shadow(0 0 140px rgba(200, 164, 106, 0.18));
-  transition: filter 700ms ease;
 }
 
 /* Section modes, toggled by hovering the primary nav items. */
@@ -201,16 +339,6 @@
   --scout-lime2: #b5dc1f;
 }
 
-[data-mode="live"] .glow-lime {
-  filter: drop-shadow(0 0 30px rgba(230, 191, 110, 0.45)) drop-shadow(0 0 90px rgba(200, 120, 60, 0.35))
-    drop-shadow(0 0 160px rgba(200, 164, 106, 0.25));
-}
-
-[data-mode="fantasy"] .glow-lime {
-  filter: drop-shadow(0 0 30px rgba(214, 255, 58, 0.5)) drop-shadow(0 0 90px rgba(80, 200, 90, 0.35))
-    drop-shadow(0 0 160px rgba(214, 255, 58, 0.2));
-}
-
 .mode-tint {
   opacity: 0;
   transition: opacity 800ms ease;
@@ -222,7 +350,7 @@
 }
 
 @layer base {
-  [data-mode] * {
+  [data-mode] :is(h1, p, a, button, span, svg, .text-lime, .bg-lime) {
     transition-property: color, background-color, border-color, fill, stroke, box-shadow;
     transition-duration: 600ms;
     transition-timing-function: ease;

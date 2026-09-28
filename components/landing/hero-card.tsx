@@ -10,12 +10,12 @@ const FACE =
 
 const TILT = {
   transform:
-    "translate3d(calc(var(--mx, 0) * 18px), calc(var(--my, 0) * 18px), 0) rotateX(calc(var(--my, 0) * -7deg)) rotateY(calc(var(--mx, 0) * 9deg))",
+    "translate3d(calc(var(--mx, 0) * 6px), calc(var(--my, 0) * 6px), 0) rotateX(calc(var(--my, 0) * -2.5deg)) rotateY(calc(var(--mx, 0) * 3.5deg))",
 }
 
 const SHINE = {
   background:
-    "radial-gradient(circle at calc(50% + var(--mx, 0) * 50%) calc(50% + var(--my, 0) * 50%), rgba(255,255,255,0.18), transparent 55%)",
+    "radial-gradient(circle at calc(50% + var(--mx, 0) * 40%) calc(50% + var(--my, 0) * 40%), rgba(255,255,255,0.14), transparent 55%)",
 }
 
 export function HeroCard() {
@@ -23,11 +23,12 @@ export function HeroCard() {
 
   return (
     <div className="relative shrink-0 [perspective:1600px]">
-      <div className="[transform-style:preserve-3d] will-change-transform" style={TILT}>
+      <div aria-hidden="true" className="hero-glow absolute -inset-16 rounded-full" />
+      <div className="relative [transform-style:preserve-3d] will-change-transform" style={TILT}>
         <Link
           href={fantasy ? "#" : "/demo"}
           aria-label={fantasy ? "Läs om Scout Fantasy" : "Öppna demospelet med Astrid"}
-          className="animate-pulse-scale glow-lime block transition-transform duration-500 hover:scale-105 [transform-style:preserve-3d]"
+          className="block transition-transform duration-500 hover:scale-[1.03] [transform-style:preserve-3d]"
         >
           <div
             className={`relative h-[520px] w-[330px] transition-transform duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] [transform-style:preserve-3d] md:h-[720px] md:w-[440px] ${
@@ -35,13 +36,16 @@ export function HeroCard() {
             }`}
           >
             <div className={FACE}>
-              <Image
-                src="/images/astrid-table.png"
-                alt="Astrid, blond croupier i svart kavaj, står redo vid blackjackbordet"
-                fill
-                priority
-                sizes="(min-width: 768px) 440px, 330px"
-                className="object-cover object-top"
+              <video
+                src="/videos/astrid-card.mp4"
+                poster="/images/astrid-card-poster.jpg"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                aria-label="Astrid, blond croupier i svart kavaj, hälsar välkommen vid blackjackbordet"
+                className="absolute inset-0 h-full w-full object-cover"
               />
               <div aria-hidden="true" className="absolute inset-0 mix-blend-soft-light" style={SHINE} />
               <div

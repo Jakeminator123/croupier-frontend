@@ -44,7 +44,7 @@ const DEPTH_CLASS = {
   near: "opacity-85",
 }
 
-const DEPTH_PARALLAX = { far: 12, mid: 28, near: 52 }
+const DEPTH_PARALLAX = { far: 3, mid: 8, near: 16 }
 
 const REPEL_DISTANCE = 96
 const FLIP_DEGREES = 180

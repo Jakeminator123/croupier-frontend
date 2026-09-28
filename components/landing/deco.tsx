@@ -69,13 +69,14 @@ export function VideoCard({ className }: { className?: string }) {
     <div aria-hidden="true" className={cn("@container w-full", className)}>
       <div className="relative aspect-[5/7] w-full overflow-hidden rounded-[6cqw] bg-ink shadow-[0_24px_60px_rgba(0,0,0,0.7)] ring-1 ring-off/20">
         <video
-          src="/videos/ai-casino-demo.mp4"
+          src="/videos/astrid-card.mp4"
+          poster="/images/astrid-card-poster.jpg"
           autoPlay
           muted
           loop
           playsInline
           preload="metadata"
-          className="absolute inset-0 h-full w-full object-cover object-top"
+          className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink/90 to-transparent" />
         <div className="absolute top-[5cqw] left-[5cqw] flex items-center gap-[2cqw] rounded-full bg-ink/70 px-[4cqw] py-[1.5cqw] backdrop-blur-sm">

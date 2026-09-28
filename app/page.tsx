@@ -7,6 +7,7 @@ import { FantasyModeProvider } from "@/components/landing/fantasy-mode"
 import { SiteNav } from "@/components/landing/site-nav"
 import { HeroCard } from "@/components/landing/hero-card"
 import { Parallax } from "@/components/landing/parallax"
+import { PerspectiveFloor } from "@/components/landing/perspective-floor"
 import { parallaxStyle } from "@/components/landing/parallax-style"
 
 const socialIcon =
@@ -17,11 +18,11 @@ export default function Home() {
     <FantasyModeProvider>
       <Parallax />
       <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-ink via-[#111418] to-steel2 text-off">
-        <div aria-hidden="true" className="bg-grid absolute -inset-8 opacity-70" style={parallaxStyle(10, true)} />
+        <PerspectiveFloor />
         <div
           aria-hidden="true"
           className="absolute -inset-16 bg-[radial-gradient(ellipse_at_72%_45%,rgba(200,164,106,0.16),transparent_50%),radial-gradient(ellipse_at_10%_100%,rgba(214,255,58,0.08),transparent_45%)]"
-          style={parallaxStyle(40)}
+          style={parallaxStyle(12)}
         />
         <div
           aria-hidden="true"
@@ -31,7 +32,7 @@ export default function Home() {
           aria-hidden="true"
           className="mode-tint mode-tint-fantasy absolute inset-0 bg-[radial-gradient(ellipse_at_70%_40%,rgba(214,255,58,0.16),transparent_55%),radial-gradient(ellipse_at_15%_90%,rgba(30,140,70,0.28),transparent_50%)]"
         />
-        <div aria-hidden="true" className="absolute -inset-10" style={parallaxStyle(18, true)}>
+        <div aria-hidden="true" className="absolute -inset-10" style={parallaxStyle(6, true)}>
           <LightTrails />
         </div>
         <CardStream />
@@ -39,7 +40,7 @@ export default function Home() {
         <SiteNav />
 
         <main className="relative z-10 flex flex-col items-center gap-12 px-6 pt-8 pb-32 md:px-16 lg:flex-row lg:items-center lg:justify-between lg:pt-12">
-          <div className="max-w-2xl will-change-transform" style={parallaxStyle(14)}>
+          <div className="max-w-2xl will-change-transform" style={parallaxStyle(4)}>
             <p className="mb-5 font-mono text-xs tracking-[0.25em] text-lime uppercase">
               {"// AI Live Casino · Scout Gaming Group · Malta & UK Licensed"}
             </p>
