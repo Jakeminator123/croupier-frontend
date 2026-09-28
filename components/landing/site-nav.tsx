@@ -3,11 +3,11 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useFantasyMode } from "./fantasy-mode"
+import { useFantasyMode, type SiteMode } from "./fantasy-mode"
 
-const PRIMARY = [
-  { label: "Fantasy", href: "#", triggersFantasy: true },
-  { label: "Live casino", href: "/demo", isNew: true },
+const PRIMARY: { label: string; href: string; mode: SiteMode; isNew?: boolean }[] = [
+  { label: "Fantasy", href: "#", mode: "fantasy" },
+  { label: "Live casino", href: "/demo", mode: "live", isNew: true },
 ]
 
 const SECONDARY = [
@@ -16,10 +16,10 @@ const SECONDARY = [
   { label: "Demo", href: "/demo" },
 ]
 
-const glow = "transition-all duration-300 hover:text-lime hover:drop-shadow-[0_0_8px_rgba(214,255,58,0.8)]"
+const glow = "transition-all duration-300 hover:text-lime hover:drop-shadow-[0_0_8px_var(--scout-lime)]"
 
 export function SiteNav() {
-  const { fantasy, setFantasy } = useFantasyMode()
+  const { mode, setMode } = useFantasyMode()
 
   return (
     <header className="relative z-10 px-6 py-6 md:px-16 md:py-8">
@@ -35,12 +35,12 @@ export function SiteNav() {
                 <Link
                   href={item.href}
                   className={`cursor-pointer text-base font-bold tracking-[0.15em] text-off uppercase ${glow} ${
-                    item.triggersFantasy && fantasy ? "text-lime drop-shadow-[0_0_8px_rgba(214,255,58,0.8)]" : ""
+                    mode === item.mode ? "text-lime drop-shadow-[0_0_8px_var(--scout-lime)]" : ""
                   }`}
-                  onPointerEnter={item.triggersFantasy ? () => setFantasy(true) : undefined}
-                  onPointerLeave={item.triggersFantasy ? () => setFantasy(false) : undefined}
-                  onFocus={item.triggersFantasy ? () => setFantasy(true) : undefined}
-                  onBlur={item.triggersFantasy ? () => setFantasy(false) : undefined}
+                  onPointerEnter={() => setMode(item.mode)}
+                  onPointerLeave={() => setMode("casino")}
+                  onFocus={() => setMode(item.mode)}
+                  onBlur={() => setMode("casino")}
                 >
                   {item.label}
                 </Link>
@@ -72,7 +72,7 @@ export function SiteNav() {
         <Button
           asChild
           size="sm"
-          className="rounded-md bg-lime px-4 font-semibold text-ink transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_rgba(214,255,58,0.5)]"
+          className="rounded-md bg-lime px-4 font-semibold text-ink transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_var(--scout-lime)]"
         >
           <Link href="/demo">
             Boka demo <ArrowRight className="h-4 w-4" aria-hidden="true" />

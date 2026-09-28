@@ -64,6 +64,36 @@ export function PitchCard({ className }: { className?: string }) {
   )
 }
 
+export function VideoCard({ className }: { className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn("@container w-full", className)}>
+      <div className="relative aspect-[5/7] w-full overflow-hidden rounded-[6cqw] bg-ink shadow-[0_24px_60px_rgba(0,0,0,0.7)] ring-1 ring-off/20">
+        <video
+          src="/videos/ai-casino-demo.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink/90 to-transparent" />
+        <div className="absolute top-[5cqw] left-[5cqw] flex items-center gap-[2cqw] rounded-full bg-ink/70 px-[4cqw] py-[1.5cqw] backdrop-blur-sm">
+          <span className="relative flex h-[3cqw] w-[3cqw]">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+            <span className="relative inline-flex h-[3cqw] w-[3cqw] rounded-full bg-red-500" />
+          </span>
+          <span className="font-mono text-[4.5cqw] font-bold tracking-[0.2em] text-off">LIVE</span>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 p-[6cqw]">
+          <p className="font-mono text-[4cqw] tracking-[0.25em] text-lime uppercase">{"// AI Live Casino"}</p>
+          <p className="font-serif text-[10cqw] leading-none text-off">Våra croupierer</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function Football({ className }: { className?: string }) {
   return (
     <div aria-hidden="true" className={cn("w-full", className)}>

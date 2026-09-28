@@ -1,13 +1,15 @@
 "use client"
 
 import { type CSSProperties, useEffect, useRef } from "react"
-import { Chip, DecoCard, DecoCardBack, Football, PitchCard } from "./deco"
+import { Chip, DecoCard, DecoCardBack, Football, PitchCard, VideoCard } from "./deco"
 import { useFantasyMode } from "./fantasy-mode"
+import { parallaxStyle } from "./parallax-style"
 import type { Suit } from "@/lib/blackjack"
 
 type Item =
   | { kind: "card"; rank: string; suit: Suit }
   | { kind: "back" }
+  | { kind: "video" }
   | { kind: "chip"; value: 10 | 25 | 100 | 500 }
 
 interface StreamItem {
@@ -25,7 +27,7 @@ const STREAM: StreamItem[] = [
   { item: { kind: "card", rank: "A", suit: "spades" }, top: "5%", size: "w-24 md:w-32", dur: 22, delay: -2, r0: -40, r1: 30, depth: "near" },
   { item: { kind: "chip", value: 100 }, top: "12%", size: "w-12 md:w-16", dur: 17, delay: -9, r0: 0, r1: 720, depth: "mid" },
   { item: { kind: "card", rank: "K", suit: "hearts" }, top: "20%", size: "w-16 md:w-24", dur: 26, delay: -14, r0: -20, r1: 50, depth: "far" },
-  { item: { kind: "back" }, top: "28%", size: "w-20 md:w-28", dur: 20, delay: -5, r0: -60, r1: 20, depth: "mid" },
+  { item: { kind: "video" }, top: "26%", size: "w-32 md:w-44", dur: 34, delay: -20, r0: -12, r1: 8, depth: "near" },
   { item: { kind: "chip", value: 25 }, top: "36%", size: "w-10 md:w-14", dur: 15, delay: -11, r0: 0, r1: -540, depth: "far" },
   { item: { kind: "card", rank: "Q", suit: "diamonds" }, top: "44%", size: "w-24 md:w-36", dur: 24, delay: -17, r0: -30, r1: 45, depth: "near" },
   { item: { kind: "card", rank: "10", suit: "clubs" }, top: "52%", size: "w-14 md:w-20", dur: 28, delay: -8, r0: -10, r1: 60, depth: "far" },
@@ -41,6 +43,8 @@ const DEPTH_CLASS = {
   mid: "opacity-55 blur-[1px]",
   near: "opacity-85",
 }
+
+const DEPTH_PARALLAX = { far: 12, mid: 28, near: 52 }
 
 const REPEL_DISTANCE = 96
 const FLIP_DEGREES = 180
@@ -63,6 +67,17 @@ function Morph({ casino, fantasy, on }: { casino: React.ReactNode; fantasy: Reac
   )
 }
 
+function CardFront({ item }: { item: Item }) {
+  if (item.kind === "card") return <DecoCard rank={item.rank} suit={item.suit} />
+  if (item.kind === "video") return <VideoCard />
+  return <DecoCardBack />
+}
+
+function CardBack({ item }: { item: Item }) {
+  if (item.kind === "back") return <DecoCard rank="A" suit="spades" />
+  return <DecoCardBack />
+}
+
 function Piece({ item, fantasy }: { item: Item; fantasy: boolean }) {
   if (item.kind === "chip") {
     return <Morph on={fantasy} casino={<Chip value={item.value} />} fantasy={<Football />} />
@@ -71,18 +86,10 @@ function Piece({ item, fantasy }: { item: Item; fantasy: boolean }) {
   return (
     <div className="relative [transform-style:preserve-3d]">
       <div className="[backface-visibility:hidden]">
-        <Morph
-          on={fantasy}
-          casino={item.kind === "card" ? <DecoCard rank={item.rank} suit={item.suit} /> : <DecoCardBack />}
-          fantasy={<PitchCard />}
-        />
+        <Morph on={fantasy} casino={<CardFront item={item} />} fantasy={<PitchCard />} />
       </div>
       <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
-        <Morph
-          on={fantasy}
-          casino={item.kind === "card" ? <DecoCardBack /> : <DecoCard rank="A" suit="spades" />}
-          fantasy={<PitchCard />}
-        />
+        <Morph on={fantasy} casino={<CardBack item={item} />} fantasy={<PitchCard />} />
       </div>
     </div>
   )
@@ -158,7 +165,11 @@ export function CardStream() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden [perspective:900px]">
       {STREAM.map((s, i) => (
-        <div key={i} className={`absolute left-0 ${s.size} ${DEPTH_CLASS[s.depth]}`} style={{ top: s.top }}>
+        <div
+          key={i}
+          className={`absolute left-0 ${s.size} ${DEPTH_CLASS[s.depth]} will-change-transform`}
+          style={{ top: s.top, ...parallaxStyle(DEPTH_PARALLAX[s.depth], true) }}
+        >
           <div
             ref={(el) => {
               trackRefs.current[i] = el

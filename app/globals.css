@@ -187,6 +187,46 @@
 .glow-lime {
   filter: drop-shadow(0 0 30px rgba(214, 255, 58, 0.25)) drop-shadow(0 0 80px rgba(200, 164, 106, 0.3))
     drop-shadow(0 0 140px rgba(200, 164, 106, 0.18));
+  transition: filter 700ms ease;
+}
+
+/* Section modes, toggled by hovering the primary nav items. */
+[data-mode="live"] {
+  --scout-lime: #e6bf6e;
+  --scout-lime2: #c8a46a;
+}
+
+[data-mode="fantasy"] {
+  --scout-lime: #d6ff3a;
+  --scout-lime2: #b5dc1f;
+}
+
+[data-mode="live"] .glow-lime {
+  filter: drop-shadow(0 0 30px rgba(230, 191, 110, 0.45)) drop-shadow(0 0 90px rgba(200, 120, 60, 0.35))
+    drop-shadow(0 0 160px rgba(200, 164, 106, 0.25));
+}
+
+[data-mode="fantasy"] .glow-lime {
+  filter: drop-shadow(0 0 30px rgba(214, 255, 58, 0.5)) drop-shadow(0 0 90px rgba(80, 200, 90, 0.35))
+    drop-shadow(0 0 160px rgba(214, 255, 58, 0.2));
+}
+
+.mode-tint {
+  opacity: 0;
+  transition: opacity 800ms ease;
+}
+
+[data-mode="live"] .mode-tint-live,
+[data-mode="fantasy"] .mode-tint-fantasy {
+  opacity: 1;
+}
+
+@layer base {
+  [data-mode] * {
+    transition-property: color, background-color, border-color, fill, stroke, box-shadow;
+    transition-duration: 600ms;
+    transition-timing-function: ease;
+  }
 }
 
 .glow-gold {
