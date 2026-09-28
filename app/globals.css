@@ -472,21 +472,56 @@
 }
 
 /*
- * Croupier ride: three silhouettes on an ace of spades that lies flat on the floor and drifts
- * from the right edge out past the left. The card is a real 3D plane so its far edge recedes
- * like the floor behind it; the figures are a WebGL canvas fed by a stacked-matte video.
+ * Croupier ride: three croupiers on an ace of spades that lies flat on the floor. One 20 s
+ * cycle, matched to the clip loop: a lime thread skims in along the floor and is absorbed at the
+ * landing point (0–1.4 s), the card unfolds from a bright sliver there (1.1–1.9 s), glides left
+ * and is off screen before the cycle ends. The scene is authored at full size and shrunk with
+ * --croupier-scale around the landing point; the card is a real 3D plane so its far edge
+ * recedes like the floor behind it.
  */
 .croupier-stage {
+  --croupier-scale: 0.5;
+  --croupier-spawn: calc(58vw - 270px);
   transition: opacity 900ms ease;
 }
 [data-mode="fantasy"] .croupier-stage {
   opacity: 0;
 }
 
+.croupier-streak-glow,
+.croupier-streak-core {
+  stroke-dasharray: 360 2400;
+  stroke-dashoffset: 360;
+  animation: croupier-streak 20s linear infinite;
+}
+
 .croupier-ride {
+  transform: translate3d(var(--croupier-spawn), 0, 0);
+  animation: croupier-ride 20s linear infinite;
+}
+
+/* The origin sits on the card's visual centre (its flattened height is ~142px), so scaling and
+   the unfold both happen around the point the thread lands on. */
+.croupier-scene {
   perspective: 700px;
   perspective-origin: 50% 20%;
-  animation: croupier-ride 56s linear infinite;
+  transform-origin: 50% calc(100% - 70px);
+  transform: scale(var(--croupier-scale));
+  animation: croupier-materialise 20s linear infinite;
+}
+
+.croupier-flash {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  width: 420px;
+  height: 140px;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center, rgba(242, 255, 176, 0.9), rgba(214, 255, 58, 0.45) 30%, transparent 68%);
+  mix-blend-mode: screen;
+  transform: translate(-50%, 50%) scale(0.2);
+  opacity: 0;
+  animation: croupier-flash 20s linear infinite;
 }
 
 .croupier-card {
@@ -502,10 +537,10 @@
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.7),
     inset 0 0 0 10px rgba(30, 28, 24, 0.06),
-    0 0 0 1px rgba(0, 0, 0, 0.45);
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 0 48px rgba(214, 255, 58, 0.14);
   transform-origin: 50% 100%;
   transform: rotateX(68deg);
-  opacity: 0.92;
   color: #17181c;
   font-family: var(--font-serif, Georgia, serif);
 }
@@ -561,15 +596,89 @@
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
 }
 
-@keyframes croupier-ride {
+/* The dash runs right off the end of the path, so the thread is swallowed at the landing point. */
+@keyframes croupier-streak {
   0% {
-    transform: translate3d(100vw, 0, 0);
+    stroke-dashoffset: 360;
   }
-  86% {
-    transform: translate3d(-640px, 0, 0);
+  7% {
+    stroke-dashoffset: -2000;
   }
   100% {
-    transform: translate3d(-640px, 0, 0);
+    stroke-dashoffset: -2000;
+  }
+}
+
+@keyframes croupier-flash {
+  0%,
+  5% {
+    opacity: 0;
+    transform: translate(-50%, 50%) scale(0.2);
+  }
+  6.5% {
+    opacity: 1;
+    transform: translate(-50%, 50%) scale(1);
+  }
+  9.5%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 50%) scale(1.7);
+  }
+}
+
+@keyframes croupier-ride {
+  0%,
+  6% {
+    transform: translate3d(var(--croupier-spawn), 0, 0);
+  }
+  92%,
+  100% {
+    transform: translate3d(-480px, 0, 0);
+  }
+}
+
+/* Born as a thin bright line where the thread lands, then unfolds upright into the full scene. */
+@keyframes croupier-materialise {
+  0%,
+  5% {
+    opacity: 0;
+    transform: scale(calc(var(--croupier-scale) * 0.7), calc(var(--croupier-scale) * 0.02));
+    filter: blur(2px) brightness(3);
+  }
+  6% {
+    opacity: 1;
+    transform: scale(calc(var(--croupier-scale) * 1.02), calc(var(--croupier-scale) * 0.03));
+    filter: blur(1px) brightness(3);
+  }
+  7.5% {
+    opacity: 1;
+    transform: scale(calc(var(--croupier-scale) * 1.05), calc(var(--croupier-scale) * 1.06));
+    filter: blur(0px) brightness(1.6);
+  }
+  9.5% {
+    transform: scale(var(--croupier-scale));
+    filter: none;
+  }
+  90% {
+    opacity: 1;
+    transform: scale(var(--croupier-scale));
+    filter: none;
+  }
+  93%,
+  100% {
+    opacity: 0;
+    transform: scale(var(--croupier-scale));
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .croupier-ride,
+  .croupier-scene,
+  .croupier-flash,
+  .croupier-streak-glow,
+  .croupier-streak-core {
+    animation: none;
   }
 }
 
