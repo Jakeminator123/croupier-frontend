@@ -9,14 +9,62 @@ import type { Suit } from "@/lib/blackjack"
 
 /** How long the Scout Gaming end card may sit before the card turns to the other face. */
 const END_CARD_MS = 4000
-/** Flight time of a projectile before it strikes; mirrors the 60% keyframe of `impact` (2 s). */
-const FLIGHT_MS = 1200
-const EARLIEST_HIT_MS = 1800
+/** Flight time of a projectile before it strikes; mirrors the 60% keyframe of `impact` (3.4 s). */
+const FLIGHT_MS = 2040
+const EARLIEST_HIT_MS = 2200
 const LATEST_HIT_MS = END_CARD_MS - 300
 
 const OTHER: Record<Face, Face> = { casino: "fantasy", fantasy: "casino" }
 
-type Projectile = { id: number; kind: "card"; rank: string; suit: Suit } | { id: number; kind: "dealer" }
+/**
+ * One way a projectile can arrive and leave. Offsets are from the hero card's centre: it enters
+ * from `from`, ricochets out through `via` and fades away at `to`. `spin` is entry angle, angle at
+ * the hit and extra spin on the way out; `jolt` is how far (x, y, rotation) the hero card recoils.
+ */
+type Trajectory = {
+  from: [string, string]
+  via: [string, string]
+  to: [string, string]
+  spin: [number, number, number]
+  jolt: [string, string, string]
+}
+
+const TRAJECTORIES: Trajectory[] = [
+  // Along the stream from bottom-left; glances off and skids away to the right.
+  {
+    from: ["-70vw", "70vh"],
+    via: ["26vw", "-8vh"],
+    to: ["60vw", "24vh"],
+    spin: [-50, 15, 620],
+    jolt: ["16px", "-12px", "2.2deg"],
+  },
+  // Flat in from the left; bounces straight back over its own shoulder.
+  {
+    from: ["-85vw", "14vh"],
+    via: ["-30vw", "-42vh"],
+    to: ["-62vw", "-26vh"],
+    spin: [-20, 30, -540],
+    jolt: ["20px", "-2px", "1.6deg"],
+  },
+  // Up from below; clipped on the bottom edge and tossed up and to the left.
+  {
+    from: ["-28vw", "95vh"],
+    via: ["-26vw", "-34vh"],
+    to: ["-64vw", "-16vh"],
+    spin: [-75, 5, -760],
+    jolt: ["4px", "-18px", "-1.8deg"],
+  },
+  // Down from top-left; knocked out of the air and drops away bottom-right.
+  {
+    from: ["-75vw", "-48vh"],
+    via: ["28vw", "26vh"],
+    to: ["44vw", "80vh"],
+    spin: [40, -12, 560],
+    jolt: ["14px", "10px", "2.6deg"],
+  },
+]
+
+type Projectile = ({ kind: "card"; rank: string; suit: Suit } | { kind: "dealer" }) & { id: number; path: number }
 
 const PROJECTILE_CARDS: { rank: string; suit: Suit }[] = [
   { rank: "A", suit: "spades" },
@@ -29,17 +77,37 @@ const PROJECTILE_CARDS: { rank: string; suit: Suit }[] = [
 /** What interrupts the end card: 2/4 a card from the stream, 1/4 the dealer button, 1/4 nothing. */
 function rollProjectile(id: number): Projectile | null {
   const roll = Math.random()
+  const path = Math.floor(Math.random() * TRAJECTORIES.length)
   if (roll < 0.5) {
     const card = PROJECTILE_CARDS[Math.floor(Math.random() * PROJECTILE_CARDS.length)]
-    return { id, kind: "card", ...card }
+    return { id, path, kind: "card", ...card }
   }
-  if (roll < 0.75) return { id, kind: "dealer" }
+  if (roll < 0.75) return { id, path, kind: "dealer" }
   return null
 }
 
-const PROJECTILE_SPIN: Record<Projectile["kind"], CSSProperties> = {
-  card: { "--r0": "-50deg", "--r1": "15deg", "--r2": "260deg" } as CSSProperties,
-  dealer: { "--r0": "0deg", "--r1": "180deg", "--r2": "1260deg" } as CSSProperties,
+/** CSS variables read by the `impact` keyframes. The puck spins harder; cards also flip over. */
+function projectileStyle(projectile: Projectile): CSSProperties {
+  const { from, via, to, spin } = TRAJECTORIES[projectile.path]
+  const isCard = projectile.kind === "card"
+  return {
+    "--fx": from[0],
+    "--fy": from[1],
+    "--vx": via[0],
+    "--vy": via[1],
+    "--tx": to[0],
+    "--ty": to[1],
+    "--r0": `${spin[0]}deg`,
+    "--r1": `${spin[1]}deg`,
+    "--r2": `${isCard ? spin[2] : spin[2] * 2}deg`,
+    "--flip": isCard ? "720deg" : "360deg",
+  } as CSSProperties
+}
+
+/** CSS variables read by the `hero-jolt` keyframes: the card recoils along the hit direction. */
+function joltStyle(path: number): CSSProperties {
+  const [jx, jy, jr] = TRAJECTORIES[path].jolt
+  return { "--jx": jx, "--jy": jy, "--jr": jr } as CSSProperties
 }
 
 const FACE =
@@ -83,7 +151,8 @@ export function HeroCard() {
   const [muted, setMuted] = useState(true)
   const [ended, setEnded] = useState<Record<Face, boolean>>({ casino: false, fantasy: false })
   const [projectile, setProjectile] = useState<Projectile | null>(null)
-  const [jolt, setJolt] = useState(false)
+  /** Index into TRAJECTORIES while the hero card recoils from a hit, otherwise null. */
+  const [jolt, setJolt] = useState<number | null>(null)
 
   const videoFor = (face: Face) => (face === "casino" ? casinoRef.current : fantasyRef.current)
 
@@ -117,7 +186,7 @@ export function HeroCard() {
       timers.push(setTimeout(() => setProjectile(incoming), hitAt - FLIGHT_MS))
       timers.push(
         setTimeout(() => {
-          setJolt(true)
+          setJolt(incoming.path)
           turn()
         }, hitAt),
       )
@@ -129,8 +198,8 @@ export function HeroCard() {
   }, [hover, auto, autoEnded, setAuto])
 
   useEffect(() => {
-    if (!jolt) return
-    const timer = setTimeout(() => setJolt(false), 700)
+    if (jolt === null) return
+    const timer = setTimeout(() => setJolt(null), 700)
     return () => clearTimeout(timer)
   }, [jolt])
 
@@ -160,8 +229,9 @@ export function HeroCard() {
       <div className="relative [transform-style:preserve-3d] will-change-transform" style={TILT}>
         <div
           className={`relative transition-transform duration-500 hover:scale-[1.03] [transform-style:preserve-3d] ${
-            jolt ? "animate-hero-jolt" : ""
+            jolt !== null ? "animate-hero-jolt" : ""
           }`}
+          style={jolt !== null ? joltStyle(jolt) : undefined}
         >
           <Link
             href={fantasy ? "#" : "/demo"}
@@ -291,7 +361,7 @@ export function HeroCard() {
           className={`animate-impact pointer-events-none absolute top-1/2 left-1/2 z-20 ${
             projectile.kind === "card" ? "w-24 md:w-32" : "w-20 md:w-28"
           }`}
-          style={PROJECTILE_SPIN[projectile.kind]}
+          style={projectileStyle(projectile)}
         >
           {projectile.kind === "card" ? (
             <DecoCard rank={projectile.rank} suit={projectile.suit} />

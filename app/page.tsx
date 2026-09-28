@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Twitter, Linkedin, Facebook, Instagram, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CardStream } from "@/components/landing/card-stream"
+import { CroupierRide } from "@/components/landing/croupier-ride"
 import { LightTrails } from "@/components/landing/light-trails"
 import { FantasyModeProvider } from "@/components/landing/fantasy-mode"
 import { SiteNav } from "@/components/landing/site-nav"
@@ -36,6 +37,7 @@ export default function Home() {
           <LightTrails />
         </div>
         <CardStream />
+        <CroupierRide />
 
         <SiteNav />
 

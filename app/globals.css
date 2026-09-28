@@ -330,44 +330,56 @@
 }
 
 /*
- * A piece from the stream flies in along the stream's diagonal, strikes the hero card at 60%
- * (1.2 s of the 2 s run, mirrored by FLIGHT_MS in hero-card.tsx) and ricochets off the top-right.
+ * A piece from the stream flies in from --fx/--fy, strikes the hero card at 60% (2.04 s of the
+ * 3.4 s run, mirrored by FLIGHT_MS in hero-card.tsx), then ricochets off in a new direction:
+ * fast out of the hit towards --vx/--vy, tumbling (--r2, --flip), before it falls away to --tx/--ty.
+ * Every keyframe lists the same transform functions so the browser interpolates each one directly.
  */
 @keyframes impact {
   0% {
-    transform: translate3d(calc(-50% - 70vw), calc(-50% + 70vh), 0) rotate(var(--r0, -40deg)) scale(0.75);
+    transform: translate3d(calc(-50% + var(--fx, -70vw)), calc(-50% + var(--fy, 70vh)), 0) rotate(var(--r0, -40deg))
+      rotateY(0deg) scale(0.75);
     opacity: 1;
     animation-timing-function: cubic-bezier(0.3, 0, 0.8, 0.5);
   }
   60% {
-    transform: translate3d(-50%, -50%, 0) rotate(var(--r1, 20deg)) scale(1);
+    transform: translate3d(-50%, -50%, 0) rotate(var(--r1, 20deg)) rotateY(0deg) scale(1);
     opacity: 1;
-    animation-timing-function: ease-out;
+    animation-timing-function: cubic-bezier(0.1, 0.6, 0.4, 1);
+  }
+  82% {
+    transform: translate3d(calc(-50% + var(--vx, 26vw)), calc(-50% + var(--vy, -8vh)), 0)
+      rotate(calc(var(--r1, 20deg) + var(--r2, 600deg) * 0.6)) rotateY(calc(var(--flip, 0deg) * 0.6)) scale(0.92);
+    opacity: 0.95;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
   }
   100% {
-    transform: translate3d(calc(-50% + 45vw), calc(-50% - 55vh), 0) rotate(var(--r2, 420deg)) scale(0.8);
+    transform: translate3d(calc(-50% + var(--tx, 60vw)), calc(-50% + var(--ty, 24vh)), 0)
+      rotate(calc(var(--r1, 20deg) + var(--r2, 600deg))) rotateY(var(--flip, 0deg)) scale(0.7);
     opacity: 0;
   }
 }
 
 .animate-impact {
-  animation: impact 2s both;
+  animation: impact 3.4s both;
 }
 
-/* The hero card recoils from the hit before it turns over. */
+/* The hero card recoils along the direction of the hit (--jx/--jy/--jr) before it turns over. */
 @keyframes hero-jolt {
   0%,
   100% {
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
   }
   18% {
-    transform: translate3d(16px, -12px, 0) rotate(2.2deg) scale(1.02);
+    transform: translate3d(var(--jx, 16px), var(--jy, -12px), 0) rotate(var(--jr, 2.2deg)) scale(1.02);
   }
   48% {
-    transform: translate3d(-7px, 5px, 0) rotate(-1deg) scale(1);
+    transform: translate3d(calc(var(--jx, 16px) * -0.45), calc(var(--jy, -12px) * -0.45), 0)
+      rotate(calc(var(--jr, 2.2deg) * -0.45)) scale(1);
   }
   74% {
-    transform: translate3d(3px, -2px, 0) rotate(0.4deg) scale(1);
+    transform: translate3d(calc(var(--jx, 16px) * 0.2), calc(var(--jy, -12px) * 0.2), 0)
+      rotate(calc(var(--jr, 2.2deg) * 0.2)) scale(1);
   }
 }
 
@@ -459,6 +471,108 @@
   animation: chip-spin 30s linear infinite;
 }
 
+/*
+ * Croupier ride: three silhouettes on an ace of spades that lies flat on the floor and drifts
+ * from the right edge out past the left. The card is a real 3D plane so its far edge recedes
+ * like the floor behind it; the figures are a WebGL canvas fed by a stacked-matte video.
+ */
+.croupier-stage {
+  transition: opacity 900ms ease;
+}
+[data-mode="fantasy"] .croupier-stage {
+  opacity: 0;
+}
+
+.croupier-ride {
+  perspective: 700px;
+  perspective-origin: 50% 20%;
+  animation: croupier-ride 56s linear infinite;
+}
+
+.croupier-card {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 540px;
+  height: 380px;
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 45%, rgba(255, 255, 255, 0.55), transparent 75%),
+    linear-gradient(160deg, #f7f2e8, #e6dfd0);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.7),
+    inset 0 0 0 10px rgba(30, 28, 24, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.45);
+  transform-origin: 50% 100%;
+  transform: rotateX(68deg);
+  opacity: 0.92;
+  color: #17181c;
+  font-family: var(--font-serif, Georgia, serif);
+}
+
+.croupier-index {
+  position: absolute;
+  font-size: 44px;
+  line-height: 0.9;
+  font-weight: 600;
+  text-align: center;
+}
+.croupier-index-tl {
+  top: 22px;
+  left: 26px;
+}
+.croupier-index-br {
+  right: 26px;
+  bottom: 22px;
+  transform: rotate(180deg);
+}
+
+.croupier-pip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 220px;
+  line-height: 1;
+  opacity: 0.16;
+}
+
+.croupier-shadow {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  width: 300px;
+  height: 40px;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center, rgba(10, 11, 13, 0.55), transparent 70%);
+  transform: translateX(-50%);
+}
+
+.croupier-figures {
+  position: absolute;
+  bottom: 58px;
+  left: 50%;
+  width: 440px;
+  height: auto;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 18px rgba(214, 255, 58, 0.22));
+  mask-image: linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
+}
+
+@keyframes croupier-ride {
+  0% {
+    transform: translate3d(100vw, 0, 0);
+  }
+  86% {
+    transform: translate3d(-640px, 0, 0);
+  }
+  100% {
+    transform: translate3d(-640px, 0, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-drift,
   .animate-deal,
@@ -473,5 +587,9 @@
   .animate-hero-jolt {
     animation: none;
     opacity: 1;
+  }
+  .croupier-ride {
+    animation: none;
+    transform: translate3d(calc(100vw - 720px), 0, 0);
   }
 }
