@@ -64,31 +64,44 @@ export function PitchCard({ className }: { className?: string }) {
   )
 }
 
-export function VideoCard({ className }: { className?: string }) {
+const QUEENS = {
+  spades: { video: "/videos/queen-spades.mp4", poster: "/images/queen-spades.jpg" },
+  hearts: { video: "/videos/queen-hearts.mp4", poster: "/images/queen-hearts.jpg" },
+} as const
+
+/** A queen whose court portrait is a living croupier instead of a drawn figure. */
+export function QueenCard({ suit, className }: { suit: keyof typeof QUEENS; className?: string }) {
+  const red = suit === "hearts"
+  const symbol = SUIT_SYMBOL[suit]
+  const media = QUEENS[suit]
   return (
     <div aria-hidden="true" className={cn("@container w-full", className)}>
-      <div className="relative aspect-[5/7] w-full overflow-hidden rounded-[6cqw] bg-ink shadow-[0_24px_60px_rgba(0,0,0,0.7)] ring-1 ring-off/20">
-        <video
-          src="/videos/astrid-card.mp4"
-          poster="/images/astrid-card-poster.jpg"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink/90 to-transparent" />
-        <div className="absolute top-[5cqw] left-[5cqw] flex items-center gap-[2cqw] rounded-full bg-ink/70 px-[4cqw] py-[1.5cqw] backdrop-blur-sm">
-          <span className="relative flex h-[3cqw] w-[3cqw]">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-            <span className="relative inline-flex h-[3cqw] w-[3cqw] rounded-full bg-red-500" />
-          </span>
-          <span className="font-mono text-[4.5cqw] font-bold tracking-[0.2em] text-off">LIVE</span>
+      <div
+        className={cn(
+          "relative aspect-[5/7] w-full overflow-hidden rounded-[6cqw] bg-[#f6f1e7] p-[7cqw] shadow-[0_20px_50px_rgba(0,0,0,0.6)] ring-1 ring-black/20",
+          red ? "text-[#a3262a]" : "text-[#1a1714]",
+        )}
+      >
+        <div className="absolute inset-x-[24cqw] top-[10cqw] bottom-[10cqw] overflow-hidden rounded-[2cqw] border-[0.8cqw] border-current/80 bg-ink">
+          <video
+            src={media.video}
+            poster={media.poster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-ink/40" />
         </div>
-        <div className="absolute inset-x-0 bottom-0 p-[6cqw]">
-          <p className="font-mono text-[4cqw] tracking-[0.25em] text-lime uppercase">{"// AI Live Casino"}</p>
-          <p className="font-serif text-[10cqw] leading-none text-off">Våra croupierer</p>
+        <div className="absolute top-[7cqw] left-[6cqw] flex w-[14cqw] flex-col items-center font-serif leading-none">
+          <span className="text-[15cqw] font-semibold">Q</span>
+          <span className="text-[11cqw]">{symbol}</span>
+        </div>
+        <div className="absolute right-[6cqw] bottom-[7cqw] flex w-[14cqw] rotate-180 flex-col items-center font-serif leading-none">
+          <span className="text-[15cqw] font-semibold">Q</span>
+          <span className="text-[11cqw]">{symbol}</span>
         </div>
       </div>
     </div>

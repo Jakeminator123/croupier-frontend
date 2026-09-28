@@ -1,7 +1,7 @@
 "use client"
 
 import { type CSSProperties, useEffect, useRef } from "react"
-import { Chip, DecoCard, DecoCardBack, Football, PitchCard, VideoCard } from "./deco"
+import { Chip, DecoCard, DecoCardBack, Football, PitchCard, QueenCard } from "./deco"
 import { useFantasyMode } from "./fantasy-mode"
 import { parallaxStyle } from "./parallax-style"
 import type { Suit } from "@/lib/blackjack"
@@ -9,7 +9,7 @@ import type { Suit } from "@/lib/blackjack"
 type Item =
   | { kind: "card"; rank: string; suit: Suit }
   | { kind: "back" }
-  | { kind: "video" }
+  | { kind: "queen"; suit: "spades" | "hearts" }
   | { kind: "chip"; value: 10 | 25 | 100 | 500 }
 
 interface StreamItem {
@@ -27,9 +27,9 @@ const STREAM: StreamItem[] = [
   { item: { kind: "card", rank: "A", suit: "spades" }, top: "5%", size: "w-24 md:w-32", dur: 22, delay: -2, r0: -40, r1: 30, depth: "near" },
   { item: { kind: "chip", value: 100 }, top: "12%", size: "w-12 md:w-16", dur: 17, delay: -9, r0: 0, r1: 720, depth: "mid" },
   { item: { kind: "card", rank: "K", suit: "hearts" }, top: "20%", size: "w-16 md:w-24", dur: 26, delay: -14, r0: -20, r1: 50, depth: "far" },
-  { item: { kind: "video" }, top: "26%", size: "w-32 md:w-44", dur: 34, delay: -20, r0: -12, r1: 8, depth: "near" },
+  { item: { kind: "queen", suit: "spades" }, top: "26%", size: "w-28 md:w-40", dur: 30, delay: -20, r0: -14, r1: 10, depth: "near" },
   { item: { kind: "chip", value: 25 }, top: "36%", size: "w-10 md:w-14", dur: 15, delay: -11, r0: 0, r1: -540, depth: "far" },
-  { item: { kind: "card", rank: "Q", suit: "diamonds" }, top: "44%", size: "w-24 md:w-36", dur: 24, delay: -17, r0: -30, r1: 45, depth: "near" },
+  { item: { kind: "queen", suit: "hearts" }, top: "44%", size: "w-24 md:w-36", dur: 27, delay: -5, r0: -20, r1: 24, depth: "near" },
   { item: { kind: "card", rank: "10", suit: "clubs" }, top: "52%", size: "w-14 md:w-20", dur: 28, delay: -8, r0: -10, r1: 60, depth: "far" },
   { item: { kind: "chip", value: 500 }, top: "60%", size: "w-14 md:w-20", dur: 19, delay: -3, r0: 0, r1: 900, depth: "near" },
   { item: { kind: "card", rank: "J", suit: "spades" }, top: "68%", size: "w-20 md:w-28", dur: 21, delay: -19, r0: -50, r1: 25, depth: "mid" },
@@ -69,7 +69,7 @@ function Morph({ casino, fantasy, on }: { casino: React.ReactNode; fantasy: Reac
 
 function CardFront({ item }: { item: Item }) {
   if (item.kind === "card") return <DecoCard rank={item.rank} suit={item.suit} />
-  if (item.kind === "video") return <VideoCard />
+  if (item.kind === "queen") return <QueenCard suit={item.suit} />
   return <DecoCardBack />
 }
 
