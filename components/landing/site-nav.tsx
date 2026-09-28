@@ -19,7 +19,7 @@ const SECONDARY = [
 const glow = "transition-all duration-300 hover:text-lime hover:drop-shadow-[0_0_8px_var(--scout-lime)]"
 
 export function SiteNav() {
-  const { mode, setMode } = useFantasyMode()
+  const { mode, setHover } = useFantasyMode()
 
   return (
     <header className="relative z-10 px-6 py-6 md:px-16 md:py-8">
@@ -37,10 +37,10 @@ export function SiteNav() {
                   className={`cursor-pointer text-base font-bold tracking-[0.15em] text-off uppercase ${glow} ${
                     mode === item.mode ? "text-lime drop-shadow-[0_0_8px_var(--scout-lime)]" : ""
                   }`}
-                  onPointerEnter={() => setMode(item.mode)}
-                  onPointerLeave={() => setMode("casino")}
-                  onFocus={() => setMode(item.mode)}
-                  onBlur={() => setMode("casino")}
+                  onPointerEnter={() => setHover(item.mode)}
+                  onPointerLeave={() => setHover(null)}
+                  onFocus={() => setHover(item.mode)}
+                  onBlur={() => setHover(null)}
                 >
                   {item.label}
                 </Link>

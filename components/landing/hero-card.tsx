@@ -1,11 +1,46 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useRef, useState } from "react"
+import { type CSSProperties, useEffect, useRef, useState } from "react"
 import { ArrowRight, RotateCcw, Volume2, VolumeX } from "lucide-react"
-import { useFantasyMode } from "./fantasy-mode"
+import { DealerButton, DecoCard } from "./deco"
+import { type Face, useFantasyMode } from "./fantasy-mode"
+import type { Suit } from "@/lib/blackjack"
 
-type Face = "casino" | "fantasy"
+/** How long the Scout Gaming end card may sit before the card turns to the other face. */
+const END_CARD_MS = 4000
+/** Flight time of a projectile before it strikes; mirrors the 60% keyframe of `impact` (2 s). */
+const FLIGHT_MS = 1200
+const EARLIEST_HIT_MS = 1800
+const LATEST_HIT_MS = END_CARD_MS - 300
+
+const OTHER: Record<Face, Face> = { casino: "fantasy", fantasy: "casino" }
+
+type Projectile = { id: number; kind: "card"; rank: string; suit: Suit } | { id: number; kind: "dealer" }
+
+const PROJECTILE_CARDS: { rank: string; suit: Suit }[] = [
+  { rank: "A", suit: "spades" },
+  { rank: "K", suit: "hearts" },
+  { rank: "Q", suit: "clubs" },
+  { rank: "J", suit: "diamonds" },
+  { rank: "10", suit: "spades" },
+]
+
+/** What interrupts the end card: 2/4 a card from the stream, 1/4 the dealer button, 1/4 nothing. */
+function rollProjectile(id: number): Projectile | null {
+  const roll = Math.random()
+  if (roll < 0.5) {
+    const card = PROJECTILE_CARDS[Math.floor(Math.random() * PROJECTILE_CARDS.length)]
+    return { id, kind: "card", ...card }
+  }
+  if (roll < 0.75) return { id, kind: "dealer" }
+  return null
+}
+
+const PROJECTILE_SPIN: Record<Projectile["kind"], CSSProperties> = {
+  card: { "--r0": "-50deg", "--r1": "15deg", "--r2": "260deg" } as CSSProperties,
+  dealer: { "--r0": "0deg", "--r1": "180deg", "--r2": "1260deg" } as CSSProperties,
+}
 
 const FACE =
   "absolute inset-0 overflow-hidden rounded-[2rem] ring-1 ring-off/15 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]"
@@ -40,12 +75,15 @@ function EndCard({ visible, tagline }: { visible: boolean; tagline: string }) {
 }
 
 export function HeroCard() {
-  const { fantasy, mode } = useFantasyMode()
+  const { fantasy, mode, hover, auto, setAuto } = useFantasyMode()
   const active: Face = fantasy ? "fantasy" : "casino"
   const casinoRef = useRef<HTMLVideoElement>(null)
   const fantasyRef = useRef<HTMLVideoElement>(null)
+  const projectileId = useRef(0)
   const [muted, setMuted] = useState(true)
   const [ended, setEnded] = useState<Record<Face, boolean>>({ casino: false, fantasy: false })
+  const [projectile, setProjectile] = useState<Projectile | null>(null)
+  const [jolt, setJolt] = useState(false)
 
   const videoFor = (face: Face) => (face === "casino" ? casinoRef.current : fantasyRef.current)
 
@@ -54,6 +92,47 @@ export function HeroCard() {
     videoFor(active === "casino" ? "fantasy" : "casino")?.pause()
     if (!ended[active]) videoFor(active)?.play().catch(() => {})
   }, [active, ended])
+
+  // Unattended end card: within END_CARD_MS something turns the card to the face that has not
+  // just played — the stream sends a card or the dealer button, or it simply turns by itself.
+  // A hovered nav item pauses the cycle entirely; hover always decides what the page shows.
+  const autoEnded = ended[auto]
+  useEffect(() => {
+    if (hover !== null || !autoEnded) return
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const incoming = reduceMotion ? null : rollProjectile(++projectileId.current)
+    const timers: ReturnType<typeof setTimeout>[] = []
+
+    const turn = () => {
+      const face = OTHER[auto]
+      const video = face === "casino" ? casinoRef.current : fantasyRef.current
+      if (video) video.currentTime = 0
+      setEnded((prev) => ({ ...prev, [face]: false }))
+      setAuto(face)
+    }
+
+    if (incoming) {
+      const hitAt = EARLIEST_HIT_MS + Math.random() * (LATEST_HIT_MS - EARLIEST_HIT_MS)
+      timers.push(setTimeout(() => setProjectile(incoming), hitAt - FLIGHT_MS))
+      timers.push(
+        setTimeout(() => {
+          setJolt(true)
+          turn()
+        }, hitAt),
+      )
+    } else {
+      timers.push(setTimeout(turn, END_CARD_MS))
+    }
+
+    return () => timers.forEach(clearTimeout)
+  }, [hover, auto, autoEnded, setAuto])
+
+  useEffect(() => {
+    if (!jolt) return
+    const timer = setTimeout(() => setJolt(false), 700)
+    return () => clearTimeout(timer)
+  }, [jolt])
 
   const toggleSound = () => {
     const nextMuted = !muted
@@ -79,7 +158,11 @@ export function HeroCard() {
     <div className="relative shrink-0 [perspective:1600px]">
       <div aria-hidden="true" className="hero-glow absolute -inset-16 rounded-full" />
       <div className="relative [transform-style:preserve-3d] will-change-transform" style={TILT}>
-        <div className="relative transition-transform duration-500 hover:scale-[1.03] [transform-style:preserve-3d]">
+        <div
+          className={`relative transition-transform duration-500 hover:scale-[1.03] [transform-style:preserve-3d] ${
+            jolt ? "animate-hero-jolt" : ""
+          }`}
+        >
           <Link
             href={fantasy ? "#" : "/demo"}
             aria-label={fantasy ? "Läs om Scout Fantasy" : "Öppna demospelet med Astrid"}
@@ -199,6 +282,24 @@ export function HeroCard() {
           </div>
         </div>
       </div>
+
+      {projectile && (
+        <div
+          key={projectile.id}
+          aria-hidden="true"
+          onAnimationEnd={() => setProjectile(null)}
+          className={`animate-impact pointer-events-none absolute top-1/2 left-1/2 z-20 ${
+            projectile.kind === "card" ? "w-24 md:w-32" : "w-20 md:w-28"
+          }`}
+          style={PROJECTILE_SPIN[projectile.kind]}
+        >
+          {projectile.kind === "card" ? (
+            <DecoCard rank={projectile.rank} suit={projectile.suit} />
+          ) : (
+            <DealerButton />
+          )}
+        </div>
+      )}
     </div>
   )
 }

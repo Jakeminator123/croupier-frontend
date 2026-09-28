@@ -138,6 +138,21 @@ export function Football({ className }: { className?: string }) {
   )
 }
 
+/** The white poker dealer puck. */
+export function DealerButton({ className }: { className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn("@container w-full", className)}>
+      <div className="relative aspect-square w-full rounded-full bg-[#f6f1e7] shadow-[0_16px_40px_rgba(0,0,0,0.6)] ring-1 ring-black/30">
+        <div className="absolute inset-[7%] rounded-full border-[2.5cqw] border-[#1a1714]" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-[15cqw] font-black tracking-[0.06em] text-[#1a1714] uppercase">Dealer</span>
+        </div>
+        <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,0.75),transparent_50%)]" />
+      </div>
+    </div>
+  )
+}
+
 const CHIP_STYLES: Record<number, { ring: string; face: string; text: string }> = {
   10: { ring: "bg-[#e9e2d3]", face: "bg-[#f6f1e7]", text: "text-[#1a1714]" },
   25: { ring: "bg-[#b8925a]", face: "bg-[#c8a46a]", text: "text-[#1a1714]" },
