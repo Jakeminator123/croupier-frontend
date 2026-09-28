@@ -1,26 +1,18 @@
-import Image from "next/image"
 import Link from "next/link"
 import { Twitter, Linkedin, Facebook, Instagram, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CardStream } from "@/components/landing/card-stream"
 import { LightTrails } from "@/components/landing/light-trails"
-
-const NAV = [
-  { label: "Fantasy", href: "#" },
-  { label: "Live casino", href: "/demo", isNew: true },
-  { label: "Operatörer", href: "#" },
-  { label: "Om oss", href: "#" },
-  { label: "Demo", href: "/demo" },
-]
-
-const navLink =
-  "cursor-pointer text-sm font-bold tracking-[0.15em] uppercase text-off transition-all duration-300 hover:text-lime hover:drop-shadow-[0_0_8px_rgba(214,255,58,0.8)]"
+import { FantasyModeProvider } from "@/components/landing/fantasy-mode"
+import { SiteNav } from "@/components/landing/site-nav"
+import { HeroCard } from "@/components/landing/hero-card"
 
 const socialIcon =
   "h-5 w-5 cursor-pointer text-off transition-all duration-300 hover:text-lime hover:drop-shadow-[0_0_12px_rgba(214,255,58,0.9)]"
 
 export default function Home() {
   return (
+    <FantasyModeProvider>
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-ink via-[#111418] to-steel2 text-off">
       <div aria-hidden="true" className="bg-grid absolute inset-0 opacity-70" />
       <div
@@ -30,38 +22,7 @@ export default function Home() {
       <LightTrails />
       <CardStream />
 
-      <header className="relative z-10 px-6 py-6 md:px-16 md:py-8">
-        <nav aria-label="Huvudmeny" className="flex items-center justify-between gap-6">
-          <Link href="/" className="text-xl font-semibold tracking-tight text-off" aria-label="Scout Gaming Group, startsida">
-            scout<span className="text-lime">/</span>gaming
-          </Link>
-
-          <ul className="hidden gap-8 md:flex lg:gap-12">
-            {NAV.map((item) => (
-              <li key={item.label} className="relative">
-                <Link href={item.href} className={navLink}>
-                  {item.label}
-                </Link>
-                {item.isNew && (
-                  <span className="absolute -top-4 left-1/2 -translate-x-1/2 -rotate-6 rounded-sm bg-lime px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-widest text-ink uppercase">
-                    Ny
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          <Button
-            asChild
-            size="sm"
-            className="rounded-md bg-lime px-4 font-semibold text-ink transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_rgba(214,255,58,0.5)]"
-          >
-            <Link href="/demo">
-              Boka demo <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        </nav>
-      </header>
+      <SiteNav />
 
       <main className="relative z-10 flex flex-col items-center gap-12 px-6 pt-8 pb-32 md:px-16 lg:flex-row lg:items-center lg:justify-between lg:pt-12">
         <div className="max-w-2xl">
@@ -112,35 +73,7 @@ export default function Home() {
           </div>
         </div>
 
-        <Link
-          href="/demo"
-          aria-label="Öppna demospelet med Astrid"
-          className="animate-pulse-scale relative shrink-0 transition-transform duration-500 hover:scale-105"
-        >
-          <div className="glow-lime relative h-[520px] w-[330px] overflow-hidden rounded-[2rem] ring-1 ring-off/15 md:h-[720px] md:w-[440px]">
-            <Image
-              src="/images/astrid-table.png"
-              alt="Astrid, blond croupier i svart kavaj, står redo vid blackjackbordet"
-              fill
-              priority
-              sizes="(min-width: 768px) 440px, 330px"
-              className="object-cover object-top"
-            />
-            <div
-              aria-hidden="true"
-              className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink to-transparent"
-            />
-            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6">
-              <div>
-                <p className="font-mono text-[10px] tracking-[0.25em] text-lime uppercase">{"// Croupier"}</p>
-                <p className="font-serif text-3xl text-off">Astrid</p>
-              </div>
-              <span className="flex items-center gap-1 rounded-full bg-lime px-4 py-2 text-xs font-bold tracking-wider text-ink uppercase">
-                Spela <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </span>
-            </div>
-          </div>
-        </Link>
+        <HeroCard />
       </main>
 
       <div className="absolute bottom-8 left-6 z-10 flex gap-6 md:bottom-12 md:left-16">
@@ -162,5 +95,6 @@ export default function Home() {
         {"// 18+ · Demo utan riktiga pengar · © Scout Gaming Group"}
       </p>
     </div>
+    </FantasyModeProvider>
   )
 }

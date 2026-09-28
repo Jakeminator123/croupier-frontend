@@ -44,6 +44,56 @@ export function DecoCardBack({ className }: { className?: string }) {
   )
 }
 
+export function PitchCard({ className }: { className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn("@container w-full", className)}>
+      <div className="relative aspect-[5/7] w-full overflow-hidden rounded-[6cqw] bg-[#1f7a3a] shadow-[0_20px_50px_rgba(0,0,0,0.6)] ring-1 ring-black/30">
+        <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.05)_0_14%,transparent_14%_28%)]" />
+        <div className="absolute inset-[6cqw] rounded-[1cqw] border-[1.5cqw] border-white/85" />
+        <div className="absolute inset-x-[6cqw] top-1/2 h-[1.5cqw] -translate-y-1/2 bg-white/85" />
+        <div className="absolute top-1/2 left-1/2 aspect-square w-[34cqw] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5cqw] border-white/85" />
+        <div className="absolute top-[6cqw] left-1/2 h-[22cqw] w-[54cqw] -translate-x-1/2 border-[1.5cqw] border-t-0 border-white/85" />
+        <div className="absolute bottom-[6cqw] left-1/2 h-[22cqw] w-[54cqw] -translate-x-1/2 border-[1.5cqw] border-b-0 border-white/85" />
+        <div className="absolute top-[6cqw] left-1/2 h-[9cqw] w-[26cqw] -translate-x-1/2 border-[1.5cqw] border-t-0 border-white/85" />
+        <div className="absolute bottom-[6cqw] left-1/2 h-[9cqw] w-[26cqw] -translate-x-1/2 border-[1.5cqw] border-b-0 border-white/85" />
+        <span className="absolute right-[7cqw] bottom-[5cqw] font-mono text-[7cqw] font-bold tracking-widest text-lime">
+          {"//FANTASY"}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+export function Football({ className }: { className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn("w-full", className)}>
+      <svg viewBox="0 0 100 100" className="aspect-square w-full drop-shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
+        <defs>
+          <radialGradient id="ball-shade" cx="38%" cy="32%" r="70%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="70%" stopColor="#e6e6e6" />
+            <stop offset="100%" stopColor="#9a9a9a" />
+          </radialGradient>
+        </defs>
+        <circle cx="50" cy="50" r="48" fill="url(#ball-shade)" stroke="#2a2a2a" strokeWidth="1.5" />
+        <polygon points="50,33 66,45 60,64 40,64 34,45" fill="#161616" />
+        <polygon points="50,2 62,10 58,24 42,24 38,10" fill="#161616" />
+        <polygon points="96,40 98,54 88,66 78,58 82,44" fill="#161616" />
+        <polygon points="4,40 18,44 22,58 12,66 2,54" fill="#161616" />
+        <polygon points="72,94 58,96 54,84 66,76 78,84" fill="#161616" />
+        <polygon points="28,94 22,84 34,76 46,84 42,96" fill="#161616" />
+        <g stroke="#161616" strokeWidth="1.8" fill="none">
+          <line x1="50" y1="33" x2="50" y2="24" />
+          <line x1="66" y1="45" x2="82" y2="44" />
+          <line x1="60" y1="64" x2="66" y2="76" />
+          <line x1="40" y1="64" x2="34" y2="76" />
+          <line x1="34" y1="45" x2="18" y2="44" />
+        </g>
+      </svg>
+    </div>
+  )
+}
+
 const CHIP_STYLES: Record<number, { ring: string; face: string; text: string }> = {
   10: { ring: "bg-[#e9e2d3]", face: "bg-[#f6f1e7]", text: "text-[#1a1714]" },
   25: { ring: "bg-[#b8925a]", face: "bg-[#c8a46a]", text: "text-[#1a1714]" },

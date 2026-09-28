@@ -1,7 +1,8 @@
 "use client"
 
 import { type CSSProperties, useEffect, useRef } from "react"
-import { Chip, DecoCard, DecoCardBack } from "./deco"
+import { Chip, DecoCard, DecoCardBack, Football, PitchCard } from "./deco"
+import { useFantasyMode } from "./fantasy-mode"
 import type { Suit } from "@/lib/blackjack"
 
 type Item =
@@ -45,22 +46,50 @@ const REPEL_DISTANCE = 96
 const FLIP_DEGREES = 180
 const SPIN_DEGREES = 140
 
-function Piece({ item }: { item: Item }) {
-  if (item.kind === "chip") return <Chip value={item.value} />
+const MORPH = "transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+
+function Morph({ casino, fantasy, on }: { casino: React.ReactNode; fantasy: React.ReactNode; on: boolean }) {
+  return (
+    <div className="relative">
+      <div className={`${MORPH} ${on ? "scale-50 rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"}`}>
+        {casino}
+      </div>
+      <div
+        className={`absolute inset-0 ${MORPH} ${on ? "scale-100 rotate-0 opacity-100" : "scale-50 -rotate-90 opacity-0"}`}
+      >
+        {fantasy}
+      </div>
+    </div>
+  )
+}
+
+function Piece({ item, fantasy }: { item: Item; fantasy: boolean }) {
+  if (item.kind === "chip") {
+    return <Morph on={fantasy} casino={<Chip value={item.value} />} fantasy={<Football />} />
+  }
 
   return (
     <div className="relative [transform-style:preserve-3d]">
       <div className="[backface-visibility:hidden]">
-        {item.kind === "card" ? <DecoCard rank={item.rank} suit={item.suit} /> : <DecoCardBack />}
+        <Morph
+          on={fantasy}
+          casino={item.kind === "card" ? <DecoCard rank={item.rank} suit={item.suit} /> : <DecoCardBack />}
+          fantasy={<PitchCard />}
+        />
       </div>
       <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
-        {item.kind === "card" ? <DecoCardBack /> : <DecoCard rank="A" suit="spades" />}
+        <Morph
+          on={fantasy}
+          casino={item.kind === "card" ? <DecoCardBack /> : <DecoCard rank="A" suit="spades" />}
+          fantasy={<PitchCard />}
+        />
       </div>
     </div>
   )
 }
 
 export function CardStream() {
+  const { fantasy } = useFantasyMode()
   const trackRefs = useRef<(HTMLDivElement | null)[]>([])
   const pieceRefs = useRef<(HTMLDivElement | null)[]>([])
 
@@ -150,7 +179,7 @@ export function CardStream() {
               }}
               className="will-change-transform [transform-style:preserve-3d]"
             >
-              <Piece item={s.item} />
+              <Piece item={s.item} fantasy={fantasy} />
             </div>
           </div>
         </div>
