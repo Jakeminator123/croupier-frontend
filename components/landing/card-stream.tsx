@@ -1,4 +1,6 @@
-import type { CSSProperties } from "react"
+"use client"
+
+import { type CSSProperties, useEffect, useRef } from "react"
 import { Chip, DecoCard, DecoCardBack } from "./deco"
 import type { Suit } from "@/lib/blackjack"
 
@@ -39,18 +41,99 @@ const DEPTH_CLASS = {
   near: "opacity-85",
 }
 
+const REPEL_DISTANCE = 96
+const FLIP_DEGREES = 180
+const SPIN_DEGREES = 140
+
 function Piece({ item }: { item: Item }) {
-  if (item.kind === "card") return <DecoCard rank={item.rank} suit={item.suit} />
-  if (item.kind === "back") return <DecoCardBack />
-  return <Chip value={item.value} />
+  if (item.kind === "chip") return <Chip value={item.value} />
+
+  return (
+    <div className="relative [transform-style:preserve-3d]">
+      <div className="[backface-visibility:hidden]">
+        {item.kind === "card" ? <DecoCard rank={item.rank} suit={item.suit} /> : <DecoCardBack />}
+      </div>
+      <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+        {item.kind === "card" ? <DecoCardBack /> : <DecoCard rank="A" suit="spades" />}
+      </div>
+    </div>
+  )
 }
 
 export function CardStream() {
+  const trackRefs = useRef<(HTMLDivElement | null)[]>([])
+  const pieceRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+
+    const pointer = { x: -9999, y: -9999 }
+    const state = STREAM.map(() => ({ x: 0, y: 0, rot: 0 }))
+
+    const onMove = (e: PointerEvent) => {
+      pointer.x = e.clientX
+      pointer.y = e.clientY
+    }
+    const onLeave = () => {
+      pointer.x = -9999
+      pointer.y = -9999
+    }
+    window.addEventListener("pointermove", onMove, { passive: true })
+    document.documentElement.addEventListener("pointerleave", onLeave)
+
+    let raf = 0
+    const tick = () => {
+      for (let i = 0; i < STREAM.length; i++) {
+        const track = trackRefs.current[i]
+        const piece = pieceRefs.current[i]
+        if (!track || !piece) continue
+
+        const rect = track.getBoundingClientRect()
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+        const dx = cx - pointer.x
+        const dy = cy - pointer.y
+        const dist = Math.hypot(dx, dy) || 1
+        const radius = Math.max(rect.width, rect.height) * 0.9 + 110
+
+        let targetX = 0
+        let targetY = 0
+        let targetRot = 0
+        if (dist < radius) {
+          const k = 1 - dist / radius
+          const ease = k * k
+          targetX = (dx / dist) * ease * REPEL_DISTANCE
+          targetY = (dy / dist) * ease * REPEL_DISTANCE
+          targetRot = ease * (STREAM[i].item.kind === "chip" ? SPIN_DEGREES : FLIP_DEGREES)
+        }
+
+        const s = state[i]
+        s.x += (targetX - s.x) * 0.22
+        s.y += (targetY - s.y) * 0.22
+        s.rot += (targetRot - s.rot) * 0.16
+
+        const spin = STREAM[i].item.kind === "chip" ? `rotate(${s.rot}deg)` : `rotateY(${s.rot}deg)`
+        piece.style.transform = `translate3d(${s.x}px, ${s.y}px, 0) ${spin}`
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener("pointermove", onMove)
+      document.documentElement.removeEventListener("pointerleave", onLeave)
+    }
+  }, [])
+
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden [perspective:900px]">
       {STREAM.map((s, i) => (
         <div key={i} className={`absolute left-0 ${s.size} ${DEPTH_CLASS[s.depth]}`} style={{ top: s.top }}>
           <div
+            ref={(el) => {
+              trackRefs.current[i] = el
+            }}
             className="animate-stream"
             style={
               {
@@ -61,7 +144,14 @@ export function CardStream() {
               } as CSSProperties
             }
           >
-            <Piece item={s.item} />
+            <div
+              ref={(el) => {
+                pieceRefs.current[i] = el
+              }}
+              className="will-change-transform [transform-style:preserve-3d]"
+            >
+              <Piece item={s.item} />
+            </div>
           </div>
         </div>
       ))}

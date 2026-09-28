@@ -1,8 +1,13 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Cormorant_Garamond, Geist_Mono } from "next/font/google"
+import { Cormorant_Garamond, Geist_Mono, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+})
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -16,13 +21,13 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Astrid · Blackjack med AI-croupier",
+  title: "Scout Gaming Group · AI Live Casino med Astrid",
   description:
-    "Sätt dig vid Astrids bord. Ett demospel i blackjack med riktiga regler: blackjack betalar 3 till 2 och dealern stannar på alla 17.",
+    "Scout Gaming Groups AI live casino. Möt Astrid, din AI-croupier i blackjack. Riktiga regler, samma integration som vår fantasy sport. Prova demot utan riktiga pengar.",
 }
 
 export const viewport: Viewport = {
-  themeColor: "#1a1714",
+  themeColor: "#0a0b0d",
   colorScheme: "dark",
 }
 
@@ -32,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="sv" className={`${cormorant.variable} ${geistMono.variable} bg-background`}>
+    <html lang="sv" className={`${inter.variable} ${cormorant.variable} ${geistMono.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
         <Analytics />

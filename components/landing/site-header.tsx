@@ -5,22 +5,24 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <Link href="/" className="flex items-baseline gap-3">
-          <span className="font-serif text-2xl tracking-wide text-foreground">Astrid</span>
+        <Link href="/" className="flex items-baseline gap-3" aria-label="Scout Gaming Group, startsida">
+          <span className="font-sans text-xl font-semibold tracking-tight text-foreground">
+            scout<span className="text-lime">/</span>gaming
+          </span>
           <span className="hidden font-mono text-[10px] tracking-[0.25em] text-muted-foreground uppercase sm:inline">
-            {"// blackjack"}
+            {"// Astrid · Blackjack"}
           </span>
         </Link>
         <nav aria-label="Huvudmeny" className="flex items-center gap-8">
           <ul className="hidden items-center gap-8 font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase md:flex">
             <li>
-              <a href="#bordet" className="transition-colors hover:text-foreground">
-                Bordet
-              </a>
+              <Link href="/" className="transition-colors hover:text-foreground">
+                Start
+              </Link>
             </li>
             <li>
-              <a href="#video" className="transition-colors hover:text-foreground">
-                Se Astrid
+              <a href="#bordet" className="transition-colors hover:text-foreground">
+                Bordet
               </a>
             </li>
             <li>
@@ -29,8 +31,8 @@ export function SiteHeader() {
               </a>
             </li>
           </ul>
-          <Button asChild size="sm" className="font-mono text-xs tracking-widest uppercase">
-            <Link href="/demo">Spela demo</Link>
+          <Button asChild size="sm" className="bg-lime font-mono text-xs tracking-widest text-ink uppercase hover:bg-lime2">
+            <Link href="/">Boka demo</Link>
           </Button>
         </nav>
       </div>
