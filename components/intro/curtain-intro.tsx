@@ -33,6 +33,19 @@ const FRAME = { w: 960, h: 1280 }
 const WALK_END = 6
 /** The seat ball rolls in behind her while she is still standing (natural clip, seconds). */
 const SEAT_ROLL = { start: 1.9, end: 3.6, distance: 1.8 }
+/** Slightly slower than the source so her 2D walk-in reads as calm rather than hurried. */
+const WALK_RATE = 0.85
+/** Classic black-and-white football: a centre pentagon, five edge pentagons and the hexagon seams. */
+const FOOTBALL_PANELS = [
+  "50.0,35.0 64.3,45.4 58.8,62.1 41.2,62.1 35.7,45.4",
+  "50.0,19.0 36.7,9.3 41.8,-6.3 58.2,-6.3 63.3,9.3",
+  "79.5,40.4 84.6,24.8 101.0,24.8 106.1,40.4 92.8,50.1",
+  "68.2,75.1 84.7,75.1 89.8,90.7 76.5,100.4 63.1,90.7",
+  "31.8,75.1 36.9,90.7 23.5,100.4 10.2,90.7 15.3,75.1",
+  "20.5,40.4 7.2,50.1 -6.1,40.4 -1.0,24.8 15.4,24.8",
+]
+const FOOTBALL_SEAMS =
+  "M50 35L50 19M64.3 45.4L79.5 40.4M58.8 62.1L68.2 75.1M41.2 62.1L31.8 75.1M35.7 45.4L20.5 40.4M63.3 9.3L84.6 24.8M92.8 50.1L84.7 75.1M63.1 90.7L36.9 90.7M15.3 75.1L7.2 50.1M15.4 24.8L36.7 9.3"
 /** Her seated pose in the natural clip, in source pixels of the 960x1280 frame. */
 const SEAT = {
   /** She has sat down and gone still by this point in the clip (seconds). */
@@ -204,6 +217,7 @@ export function CurtainIntro() {
     video.addEventListener("ended", advance)
     video.addEventListener("timeupdate", seated)
     video.addEventListener("error", bail)
+    video.playbackRate = phase === "intro" ? WALK_RATE : 1
     video.play().catch(bail)
     return () => {
       clearTimeout(guard)
@@ -420,10 +434,13 @@ export function CurtainIntro() {
         <div ref={seatBallRef} className="intro-seat">
           <div className="intro-seat-shadow" />
           <div className="intro-seat-ball">
-            <svg viewBox="0 0 100 100" className="intro-seat-seams">
-              <polygon points="50,34 65.2,45.1 59.4,62.9 40.6,62.9 34.8,45.1" className="intro-seat-panel" />
-              <path d="M50 34V2M65.2 45.1L95.6 35.2M59.4 62.9L78.2 88.8M40.6 62.9L21.8 88.8M34.8 45.1L4.4 35.2" />
+            <svg viewBox="0 0 100 100" className="intro-seat-seams" aria-hidden="true">
+              {FOOTBALL_PANELS.map((points) => (
+                <polygon key={points} points={points} className="intro-seat-panel" />
+              ))}
+              <path d={FOOTBALL_SEAMS} />
             </svg>
+            <div className="intro-seat-shade" />
           </div>
         </div>
         <canvas ref={canvasRef} width={FRAME.w} height={FRAME.h} />
