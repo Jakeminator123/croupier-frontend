@@ -53,14 +53,16 @@ const BUNDLE_WIDTH = 0.16
 /** Drape centre (mirrored video-frame widths) as it trails her hand across her body. */
 const CENTER_KEYS: [number, number][] = [
   [1.45, HAND_X],
-  [1.6, 0.24],
-  [1.75, 0.32],
-  [1.9, 0.48],
-  [2.05, 0.66],
-  [2.2, 0.8],
-  [2.35, 0.9],
-  [2.5, 0.97],
-  [2.65, 1.04],
+  [1.6, 0.25],
+  [1.75, 0.36],
+  [1.9, 0.56],
+  [2.0, 0.685],
+  [2.12, 0.774],
+  [2.25, 0.868],
+  [2.38, 0.93],
+  [2.5, 0.974],
+  [2.62, 1.0],
+  [2.75, 1.06],
 ]
 /** Drape width (video-frame widths); it billows open mid-sweep and narrows as it flies off. */
 const WIDTH_KEYS: [number, number][] = [
@@ -130,8 +132,9 @@ export function curtainFrame(g: number, m: StageMetrics, count: number): Curtain
     if (g > FLING_START) {
       // Whatever the screen size, the sheet must be fully off the far edge by CURTAIN_GONE.
       const exit = m.vw + Math.max(uHand, 0.2) * drapeW + drapeW * 0.15 + 40
-      const t = (g - FLING_START) / (CURTAIN_GONE - 0.08 - FLING_START)
-      center = lerp(center, Math.max(center, exit), clamp01(t) * clamp01(t))
+      // Thrown, not dragged: it leaves the hand already moving and keeps picking up speed.
+      const t = clamp01((g - FLING_START) / (CURTAIN_GONE - 0.08 - FLING_START))
+      center = lerp(center, Math.max(center, exit), t * (0.45 + 0.55 * t))
     }
   }
 
@@ -175,14 +178,19 @@ export function curtainFrame(g: number, m: StageMetrics, count: number): Curtain
   return { poses, left, right, bunch: (bunch / count) * (1 - drapeW / m.vw) }
 }
 
-export function computeMetrics(vw: number, vh: number): StageMetrics {
+/**
+ * `anchorX` lines her up with where she will finally sit (the hero card). It is capped so the
+ * hand that grabs the sheet, which reaches out to screen right, stays inside the viewport.
+ */
+export function computeMetrics(vw: number, vh: number, anchorX?: number): StageMetrics {
   let videoH = vh * 0.9
   let videoW = videoH * 0.75
   if (videoW > vw * 0.96) {
     videoW = vw * 0.96
     videoH = videoW / 0.75
   }
-  const centerX = vw >= 900 ? vw * 0.52 : vw * 0.5
+  const fallbackX = vw >= 900 ? vw * 0.52 : vw * 0.5
+  const centerX = anchorX === undefined ? fallbackX : Math.min(anchorX, vw - 20 - (0.5 - HAND_X) * videoW)
   return {
     vw,
     vh,

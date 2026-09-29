@@ -84,6 +84,16 @@
   pointer-events: none;
 }
 
+.intro-card {
+  position: absolute;
+  left: -9999px;
+  z-index: 35;
+  overflow: hidden;
+  pointer-events: none;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  will-change: left, top, width, height, transform;
+}
+
 .intro-skip {
   position: absolute;
   z-index: 40;

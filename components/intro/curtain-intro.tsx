@@ -2,7 +2,9 @@
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { createMatteRenderer } from "@/lib/matte-renderer"
+import { setIntroHandoff } from "@/lib/intro-handoff"
 import { RetroSite } from "./retro-site"
+import { IntroPlayingCard, type Box } from "./intro-playing-card"
 import {
   CURTAIN_GONE,
   LAYER_SWITCH,
@@ -14,10 +16,10 @@ import {
 } from "./curtain-math"
 
 type Clip = "intro" | "curtain" | "outro"
-type Phase = Clip | "leaving" | "done"
+type Phase = Clip | "card" | "leaving" | "done"
 
 const CLIPS: Clip[] = ["intro", "curtain", "outro"]
-const NEXT: Record<Clip, Phase> = { intro: "curtain", curtain: "outro", outro: "leaving" }
+const NEXT: Record<Clip, Phase> = { intro: "curtain", curtain: "outro", outro: "card" }
 const SRC: Record<Clip, string> = {
   intro: "/videos/intro/astrid-walk.mp4",
   curtain: "/videos/intro/astrid-drag.mp4",
@@ -29,15 +31,31 @@ const LEAVE_MS = 700
 const FRAME = { w: 960, h: 1280 }
 /**
  * The walk-in clip is wider than the others: the standard frame sits at its right edge and she
- * enters from well left of it, so on most screens she starts outside the viewport.
+ * takes ten identical steps toward it. Playback starts at whichever step puts her just outside
+ * the viewport, so she always walks in at her own pace instead of being slid across wide screens.
  */
 const WALK = {
-  widthRatio: 1792 / 960,
-  /** Her right edge in the first frame, in frame widths from the standard frame's left edge. */
-  startRight: (317 - 832) / 960,
-  /** Seconds of walking; any extra distance a wide screen needs is added as a glide over this. */
-  walkEnd: 4.6,
+  canvasW: 2396,
+  /** Her right edge on the first frame, in source pixels of the wide canvas. */
+  firstRight: 317,
+  /** Distance and duration of one step cycle. */
+  step: 151,
+  loopS: 0.8,
+  loops: 10,
+  walkEnd: 8,
 }
+/** Her seated pose in the natural clip, in source pixels of the 960x1280 frame. */
+const SEAT = {
+  /** She has sat down and gone still by this point in the clip (seconds). */
+  settled: 6.2,
+  moveStart: 0.3,
+  moveEnd: 6,
+  top: 322,
+  bottom: 1234,
+  headX: 476,
+  faceY: 425,
+}
+const HERO_RATIO = 440 / 720
 
 // Survives client-side navigation and resets with a full page load: the intro is a loading screen,
 // so coming back from /demo should not replay it.
@@ -45,15 +63,73 @@ let introPlayed = false
 
 const Retro = memo(RetroSite)
 
+const clamp01 = (t: number) => Math.min(1, Math.max(0, t))
+const smooth = (t: number) => {
+  const c = clamp01(t)
+  return c * c * (3 - 2 * c)
+}
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+
+/** The hero card, when it is on screen beside the headline (desktop layout). */
+function heroRect(vw: number, vh: number): Box | null {
+  if (vw < 1024) return null
+  const rect = document.querySelector("[data-intro-target]")?.getBoundingClientRect()
+  if (!rect || rect.width < 50 || rect.top < 0 || rect.bottom > vh) return null
+  return { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+}
+
+/** Where the playing card ends up: the hero card, or a card of the same shape where she stands. */
+function cardTarget(m: StageMetrics): Box {
+  const hero = heroRect(m.vw, m.vh)
+  if (hero) return hero
+  const height = Math.min(720, m.vh * 0.62, (m.vw * 0.8) / HERO_RATIO)
+  const width = height * HERO_RATIO
+  const centerX = m.videoLeft + (SEAT.headX / FRAME.w) * m.videoW
+  return { left: centerX - width / 2, top: (m.vh - height) / 2, width, height }
+}
+
+/** The video box that puts her seated figure inside the card, head centred near the top. */
+function seatBox(card: Box): Box {
+  const scale = (card.height * 0.86) / (SEAT.bottom - SEAT.top)
+  return {
+    left: card.left + card.width / 2 - SEAT.headX * scale,
+    top: card.top + card.height * 0.07 - SEAT.top * scale,
+    width: FRAME.w * scale,
+    height: FRAME.h * scale,
+  }
+}
+
+function measureStage(root: HTMLElement): StageMetrics {
+  const vw = root.clientWidth
+  const vh = root.clientHeight
+  const hero = heroRect(vw, vh)
+  return computeMetrics(vw, vh, hero ? hero.left + hero.width / 2 : undefined)
+}
+
+/** Which step to start the walk on, plus any glide still needed on screens wider than ten steps. */
+function walkPlan(m: StageMetrics) {
+  const scale = m.videoW / FRAME.w
+  const boxLeft = m.videoLeft + m.videoW - (m.videoW * WALK.canvasW) / FRAME.w
+  const rightAt = (step: number) => boxLeft + (WALK.firstRight + step * WALK.step) * scale
+  const ideal = Math.floor(((-12 - boxLeft) / scale - WALK.firstRight) / WALK.step)
+  const step = Math.max(0, Math.min(WALK.loops - 1, ideal))
+  return { start: step * WALK.loopS, glide: Math.max(0, rightAt(step) + 12) }
+}
+
+type Seat = { card: Box; seat: Box }
+
 /**
  * Loading-screen intro. A Windows 95 desktop covers the real site while it loads; Astrid walks
  * in as a 2D figure, becomes a 3D avatar, grabs the old page like a curtain and flings it off
- * screen, then turns photoreal over the revealed site. Skippable with the button or Escape.
+ * screen, then turns photoreal and sits down where the hero card will be. A Scout Gaming playing
+ * card lands on her face and grows into the hero card, whose video opens on that same face.
+ * Skippable with the button or Escape.
  */
 export function CurtainIntro() {
   const [phase, setPhase] = useState<Phase>("intro")
   const [metrics, setMetrics] = useState<StageMetrics | null>(null)
   const [curtainGone, setCurtainGone] = useState(false)
+  const [cardPlan, setCardPlan] = useState<{ face: { x: number; y: number }; target: Box } | null>(null)
 
   const rootRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -64,6 +140,8 @@ export function CurtainIntro() {
   const shadeRefs = useRef<(HTMLDivElement | null)[]>([])
   const phaseRef = useRef<Phase>("intro")
   const metricsRef = useRef<StageMetrics | null>(null)
+  const walkRef = useRef({ start: 0, glide: 0 })
+  const seatRef = useRef<Seat | null>(null)
   const goneRef = useRef(false)
   const startedAt = useRef(0)
   const lastSheet = useRef<"static" | "strips">("static")
@@ -71,9 +149,6 @@ export function CurtainIntro() {
   useEffect(() => {
     phaseRef.current = phase
   }, [phase])
-  useEffect(() => {
-    metricsRef.current = metrics
-  }, [metrics])
 
   const active = phase !== "done"
 
@@ -86,49 +161,86 @@ export function CurtainIntro() {
     }
     introPlayed = true
     startedAt.current = performance.now()
+    setIntroHandoff("holding")
   }, [])
 
   useLayoutEffect(() => {
     const root = rootRef.current
     if (!active || !root) return
-    const measure = () => setMetrics(computeMetrics(root.clientWidth, root.clientHeight))
+    const measure = () => {
+      const next = measureStage(root)
+      metricsRef.current = next
+      setMetrics(next)
+    }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(root)
     return () => observer.disconnect()
   }, [active])
 
+  const dealCard = useCallback(() => {
+    if (phaseRef.current !== "outro") return
+    phaseRef.current = "card"
+    const plan = seatRef.current
+    if (!plan) {
+      setPhase("leaving")
+      return
+    }
+    const scale = plan.seat.width / FRAME.w
+    setCardPlan({
+      face: { x: plan.seat.left + SEAT.headX * scale, y: plan.seat.top + SEAT.faceY * scale },
+      target: plan.card,
+    })
+    setPhase("card")
+  }, [])
+
   // One clip per phase; the next phase starts when the clip ends.
   useEffect(() => {
-    if (phase === "done" || phase === "leaving") return
+    if (phase !== "intro" && phase !== "curtain" && phase !== "outro") return
     const video = videoRefs.current[phase]
     if (!video) return
-    if (phase === "outro" && !goneRef.current) {
-      goneRef.current = true
-      setCurtainGone(true)
+    const m = metricsRef.current
+    if (phase === "intro" && m) walkRef.current = walkPlan(m)
+    if (phase === "outro") {
+      if (!goneRef.current) {
+        goneRef.current = true
+        setCurtainGone(true)
+      }
+      if (m) {
+        const card = cardTarget(m)
+        seatRef.current = { card, seat: seatBox(card) }
+      }
     }
-    const advance = () => setPhase(NEXT[phase])
+    const advance = () => (phase === "outro" ? dealCard() : setPhase(NEXT[phase]))
+    // Backs up the per-frame check in throttled tabs, where animation frames can be rare.
+    const seated = () => {
+      if (phase === "outro" && video.currentTime >= SEAT.settled) dealCard()
+    }
     const bail = () => setPhase("leaving")
     const guard = setTimeout(bail, CLIP_TIMEOUT_MS[phase])
-    video.currentTime = 0
+    video.currentTime = phase === "intro" ? walkRef.current.start : 0
     video.addEventListener("ended", advance)
+    video.addEventListener("timeupdate", seated)
     video.addEventListener("error", bail)
     video.play().catch(bail)
     return () => {
       clearTimeout(guard)
       video.removeEventListener("ended", advance)
+      video.removeEventListener("timeupdate", seated)
       video.removeEventListener("error", bail)
     }
-  }, [phase])
+  }, [phase, dealCard])
 
   useEffect(() => {
     if (phase !== "leaving") return
+    setIntroHandoff("revealed")
     for (const clip of CLIPS) videoRefs.current[clip]?.pause()
     const timer = setTimeout(() => setPhase("done"), LEAVE_MS)
     return () => clearTimeout(timer)
   }, [phase])
 
   const skip = useCallback(() => setPhase((current) => (current === "done" ? current : "leaving")), [])
+  const finishCard = useCallback(() => setPhase((current) => (current === "card" ? "leaving" : current)), [])
 
   useEffect(() => {
     if (!active) return
@@ -157,33 +269,51 @@ export function CurtainIntro() {
       const box = avatarRef.current
       if (!box) return
       let left = m.videoLeft
+      let top = m.videoTop
       let width = m.videoW
+      let height = m.videoH
       let shift = 0
       if (shown === "intro") {
-        width = Math.round(m.videoW * WALK.widthRatio)
+        width = Math.round((m.videoW * WALK.canvasW) / FRAME.w)
         left = m.videoLeft + m.videoW - width
         const walk = videoRefs.current.intro
-        const glide = Math.max(0, m.videoLeft + WALK.startRight * m.videoW + 24)
-        const t = walk ? Math.min(1, walk.currentTime / WALK.walkEnd) : 0
-        shift = -glide * (1 - t) ** 3
+        const { start, glide } = walkRef.current
+        if (glide > 0 && walk) shift = -glide * (1 - clamp01((walk.currentTime - start) / (WALK.walkEnd - start)))
+      } else if (shown === "outro" && seatRef.current) {
+        // She drifts to her seat while turning photoreal and sitting down.
+        const t = videoRefs.current.outro?.currentTime ?? 0
+        const p = smooth((t - SEAT.moveStart) / (SEAT.moveEnd - SEAT.moveStart))
+        const { seat } = seatRef.current
+        left = lerp(m.videoLeft, seat.left, p)
+        top = lerp(m.videoTop, seat.top, p)
+        width = lerp(m.videoW, seat.width, p)
+        height = lerp(m.videoH, seat.height, p)
       }
-      const next = `${left}|${width}|${shift.toFixed(1)}`
+      const next = `${left.toFixed(1)}|${top.toFixed(1)}|${width.toFixed(1)}|${height.toFixed(1)}|${shift.toFixed(1)}`
       if (next === boxStyle) return
       boxStyle = next
-      box.style.left = `${left}px`
-      box.style.width = `${width}px`
+      box.style.left = `${left.toFixed(1)}px`
+      box.style.top = `${top.toFixed(1)}px`
+      box.style.width = `${width.toFixed(1)}px`
+      box.style.height = `${height.toFixed(1)}px`
       box.style.transform = shift ? `translateX(${shift.toFixed(1)}px)` : ""
     }
 
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop)
       const current = phaseRef.current
-      const clip = current === "intro" || current === "curtain" || current === "outro" ? current : null
+      const clip: Clip | null =
+        current === "intro" || current === "curtain" || current === "outro"
+          ? current
+          : current === "card" || current === "leaving"
+            ? "outro"
+            : null
       const video = clip ? videoRefs.current[clip] : null
       if (clip && video && renderer?.draw(video)) shown = clip
 
       const m = metricsRef.current
       if (m) layoutAvatar(m)
+      if (current === "outro" && video && video.currentTime >= SEAT.settled) dealCard()
       const dt = Math.max(1 / 240, (now - prevTime) / 1000)
       prevTime = now
       if (!m || current !== "curtain" || goneRef.current || !video) return
@@ -222,7 +352,7 @@ export function CurtainIntro() {
       cancelAnimationFrame(raf)
       renderer?.dispose()
     }
-  }, [active])
+  }, [active, dealCard])
 
   const count = metrics ? stripCount(metrics.vw) : 0
   const strips = useMemo(() => {
@@ -299,7 +429,7 @@ export function CurtainIntro() {
         className="intro-avatar"
         aria-hidden="true"
         data-hidden={phase === "leaving" ? "" : undefined}
-        style={metrics ? { top: metrics.videoTop, height: metrics.videoH } : { visibility: "hidden" }}
+        style={metrics ? undefined : { visibility: "hidden" }}
       >
         <canvas ref={canvasRef} width={FRAME.w} height={FRAME.h} />
         {CLIPS.map((clip) => (
@@ -315,6 +445,10 @@ export function CurtainIntro() {
           />
         ))}
       </div>
+
+      {cardPlan && (phase === "card" || phase === "leaving") && (
+        <IntroPlayingCard face={cardPlan.face} target={cardPlan.target} onDone={finishCard} />
+      )}
 
       <button type="button" className="intro-skip" data-look={curtainGone ? "modern" : "retro"} onClick={skip} autoFocus>
         {curtainGone ? "Hoppa över intro" : "Hoppa över intro »"}

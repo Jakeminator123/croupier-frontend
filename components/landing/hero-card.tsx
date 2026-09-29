@@ -6,6 +6,11 @@ import { ArrowRight, RotateCcw, Volume2, VolumeX } from "lucide-react"
 import { DealerButton, DecoCard } from "./deco"
 import { type Face, useFantasyMode } from "./fantasy-mode"
 import type { Suit } from "@/lib/blackjack"
+import { useIntroHandoff } from "@/lib/intro-handoff"
+
+/** After the intro's card has become this card, its logo lingers before the video shows through. */
+const HANDOFF_LOGO_MS = 650
+const HANDOFF_ZOOM_MS = 3300
 
 /** How long the Scout Gaming end card may sit before the card turns to the other face. */
 const END_CARD_MS = 4000
@@ -126,13 +131,13 @@ const SHINE = {
 const CONTROL =
   "flex h-9 w-9 items-center justify-center rounded-full bg-ink/70 text-off ring-1 ring-off/20 backdrop-blur-sm transition-all duration-300 hover:bg-ink/90 hover:text-lime focus-visible:ring-2 focus-visible:ring-lime focus-visible:outline-none"
 
-function EndCard({ visible, tagline }: { visible: boolean; tagline: string }) {
+function EndCard({ visible, tagline, snap = false }: { visible: boolean; tagline: string; snap?: boolean }) {
   return (
     <div
       aria-hidden={!visible}
-      className={`absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ink transition-opacity duration-1000 ease-out ${
-        visible ? "opacity-100" : "pointer-events-none opacity-0"
-      }`}
+      className={`absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ink ${
+        snap ? "" : "transition-opacity duration-1000 ease-out"
+      } ${visible ? "opacity-100" : "pointer-events-none opacity-0"}`}
     >
       <p className="text-4xl font-semibold tracking-tight text-off md:text-5xl">
         scout<span className="text-lime">/</span>gaming
@@ -154,13 +159,44 @@ export function HeroCard() {
   /** Index into TRAJECTORIES while the hero card recoils from a hit, otherwise null. */
   const [jolt, setJolt] = useState<number | null>(null)
 
+  const handoff = useIntroHandoff()
+  const holding = handoff === "holding"
+  const wasHolding = useRef(false)
+  const [introLogo, setIntroLogo] = useState(false)
+  const [introZoom, setIntroZoom] = useState(false)
+
   const videoFor = (face: Face) => (face === "casino" ? casinoRef.current : fantasyRef.current)
+
+  // While the intro plays the card is invisible and waits at its first frame; when the intro's
+  // playing card lands on it, it takes over showing the same logo, then opens on Astrid's face.
+  useEffect(() => {
+    if (holding) {
+      wasHolding.current = true
+      const video = casinoRef.current
+      if (video) {
+        video.pause()
+        video.currentTime = 0
+      }
+      return
+    }
+    if (handoff !== "revealed" || !wasHolding.current) return
+    wasHolding.current = false
+    setIntroLogo(true)
+    setIntroZoom(true)
+    const logo = setTimeout(() => setIntroLogo(false), HANDOFF_LOGO_MS)
+    const zoom = setTimeout(() => setIntroZoom(false), HANDOFF_ZOOM_MS)
+    return () => {
+      clearTimeout(logo)
+      clearTimeout(zoom)
+    }
+  }, [handoff, holding])
 
   // Only the face turned toward the viewer plays, so audio never overlaps across the flip.
   useEffect(() => {
     videoFor(active === "casino" ? "fantasy" : "casino")?.pause()
+    if (holding) return
     if (!ended[active]) videoFor(active)?.play().catch(() => {})
-  }, [active, ended])
+  }, [active, ended, holding])
 
   // Unattended end card: within END_CARD_MS something turns the card to the face that has not
   // just played — the stream sends a card or the dealer button, or it simply turns by itself.
@@ -224,7 +260,10 @@ export function HeroCard() {
   const markEnded = (face: Face) => () => setEnded((prev) => ({ ...prev, [face]: true }))
 
   return (
-    <div className="relative shrink-0 [perspective:1600px]">
+    <div
+      className={`relative shrink-0 [perspective:1600px] ${holding ? "pointer-events-none opacity-0" : ""}`}
+      aria-hidden={holding || undefined}
+    >
       <div aria-hidden="true" className="hero-glow absolute -inset-16 rounded-full" />
       <div className="relative [transform-style:preserve-3d] will-change-transform" style={TILT}>
         <div
@@ -239,6 +278,7 @@ export function HeroCard() {
             className="block [transform-style:preserve-3d]"
           >
             <div
+              data-intro-target
               className={`relative h-[520px] w-[330px] transition-transform duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] [transform-style:preserve-3d] md:h-[720px] md:w-[440px] ${
                 fantasy ? "[transform:rotateY(180deg)]" : "[transform:rotateY(0deg)]"
               }`}
@@ -248,13 +288,12 @@ export function HeroCard() {
                   ref={casinoRef}
                   src="/videos/astrid-card.mp4"
                   poster="/images/astrid-card-poster.jpg"
-                  autoPlay
                   muted
                   playsInline
                   preload="auto"
                   onEnded={markEnded("casino")}
                   aria-label="Astrid, blond croupier i svart kavaj, hälsar välkommen vid blackjackbordet"
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className={`absolute inset-0 h-full w-full object-cover ${introZoom ? "animate-intro-face-zoom" : ""}`}
                 />
                 <div
                   aria-hidden="true"
@@ -282,7 +321,7 @@ export function HeroCard() {
                     Spela <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                 </div>
-                <EndCard visible={ended.casino} tagline="AI Live Casino" />
+                <EndCard visible={ended.casino || introLogo} snap={introLogo} tagline="AI Live Casino" />
                 <div aria-hidden="true" className="absolute inset-0 mix-blend-soft-light" style={SHINE} />
               </div>
 
