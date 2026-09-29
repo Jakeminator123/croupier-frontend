@@ -28,8 +28,11 @@ function compile(gl: WebGLRenderingContext, type: number, source: string) {
 }
 
 export type MatteRenderer = {
-  /** Uploads the video's current frame if it changed and composites it onto the canvas. */
-  draw(video: HTMLVideoElement): void
+  /**
+   * Uploads the video's current frame if it changed and composites it onto the canvas.
+   * Returns false while the video has no frame yet, in which case the canvas keeps the previous one.
+   */
+  draw(video: HTMLVideoElement): boolean
   clear(): void
   dispose(): void
 }
@@ -71,8 +74,8 @@ export function createMatteRenderer(canvas: HTMLCanvasElement): MatteRenderer | 
 
   return {
     draw(video) {
-      if (video.readyState < 2) return
-      if (video === lastVideo && video.currentTime === lastTime) return
+      if (video.readyState < 2) return false
+      if (video === lastVideo && video.currentTime === lastTime) return true
       lastVideo = video
       lastTime = video.currentTime
       if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight / 2) {
@@ -83,6 +86,7 @@ export function createMatteRenderer(canvas: HTMLCanvasElement): MatteRenderer | 
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video)
       gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+      return true
     },
     clear() {
       lastVideo = null

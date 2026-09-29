@@ -1,8 +1,11 @@
 /**
  * Cloth model for the intro curtain. The retro page is cut into vertical strips; this module
  * turns the curtain clip's local time (`g`, seconds) into a transform per strip so the sheet
- * follows Astrid's hand: it bunches up where she grabs it, is flung across in front of her and
- * leaves through the right edge. All positions are in viewport pixels.
+ * follows Astrid's hand: she grabs it to her left (screen right), drags it across in front of
+ * herself and flings it out through the left edge. All positions are in viewport pixels.
+ *
+ * The keys are written for a left-to-right sweep and evaluated in a mirrored space, so "right"
+ * in the constants below means the screen's left.
  */
 
 export type StageMetrics = {
@@ -33,45 +36,46 @@ export type CurtainFrame = {
   bunch: number
 }
 
-/** Moments in the curtain clip (seconds). Read off the source at 6 fps. */
-export const GATHER_START = 0.55
+/** Moments in the curtain clip (seconds), read off the keyed source's hand positions. */
+export const GATHER_START = 0.6
 /** The sheet is a bundle in her hand and moves in front of her from here on. */
 export const LAYER_SWITCH = 1.45
-export const SWEEP_START = 1.5
-export const CURTAIN_GONE = 3.0
+export const SWEEP_START = 1.45
+export const CURTAIN_GONE = 3.15
 
 const GATHER_LAG = 0.35
 const GATHER_DURATION = 0.55
-/** Where her hand grips the sheet, as a fraction of the video frame. */
-const HAND = { x: 0.02, y: 0.06 }
+/** Where her outstretched hand grips the sheet, in mirrored video-frame widths. */
+const HAND_X = 0.18
 /** Width of the gathered bundle, in video-frame widths. */
 const BUNDLE_WIDTH = 0.16
 
-/** Drape centre (video-frame widths from the frame's left edge) as it trails her hand. */
+/** Drape centre (mirrored video-frame widths) as it trails her hand across her body. */
 const CENTER_KEYS: [number, number][] = [
-  [1.5, 0.06],
-  [1.7, 0.12],
-  [1.85, 0.25],
-  [2.0, 0.38],
-  [2.15, 0.52],
-  [2.3, 0.66],
-  [2.45, 0.82],
-  [2.6, 1.02],
+  [1.45, HAND_X],
+  [1.6, 0.24],
+  [1.75, 0.32],
+  [1.9, 0.48],
+  [2.05, 0.66],
+  [2.2, 0.8],
+  [2.35, 0.9],
+  [2.5, 0.97],
+  [2.65, 1.04],
 ]
 /** Drape width (video-frame widths); it billows open mid-sweep and narrows as it flies off. */
 const WIDTH_KEYS: [number, number][] = [
-  [1.5, BUNDLE_WIDTH],
-  [1.7, 0.3],
-  [1.85, 0.55],
-  [2.0, 0.78],
-  [2.15, 0.78],
-  [2.3, 0.72],
-  [2.45, 0.62],
-  [2.6, 0.52],
-  [2.8, 0.44],
-  [3.0, 0.4],
+  [1.45, BUNDLE_WIDTH],
+  [1.6, 0.3],
+  [1.75, 0.55],
+  [1.9, 0.78],
+  [2.05, 0.78],
+  [2.2, 0.72],
+  [2.35, 0.62],
+  [2.5, 0.52],
+  [2.7, 0.44],
+  [2.9, 0.4],
 ]
-const FLING_START = 2.6
+const FLING_START = 2.65
 
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t))
 const smooth = (t: number) => {
@@ -102,7 +106,9 @@ export function stripCount(vw: number) {
 
 export function curtainFrame(g: number, m: StageMetrics, count: number): CurtainFrame {
   const stripW = stripWidth(m.vw, count)
-  const handX = m.videoLeft + HAND.x * m.videoW
+  const flip = (p: number) => m.vw - p
+  const mirroredLeft = m.vw - m.videoLeft - m.videoW
+  const handX = mirroredLeft + HAND_X * m.videoW
   const uHand = handX / m.vw
   const bundleW = BUNDLE_WIDTH * m.videoW
   const poses: StripPose[] = new Array(count)
@@ -120,9 +126,9 @@ export function curtainFrame(g: number, m: StageMetrics, count: number): Curtain
   let drapeW = bundleW
   if (sweeping) {
     drapeW = keyed(WIDTH_KEYS, g) * m.videoW
-    center = m.videoLeft + keyed(CENTER_KEYS, g) * m.videoW
+    center = mirroredLeft + keyed(CENTER_KEYS, g) * m.videoW
     if (g > FLING_START) {
-      // Whatever the screen size, the sheet must be fully off the right edge by CURTAIN_GONE.
+      // Whatever the screen size, the sheet must be fully off the far edge by CURTAIN_GONE.
       const exit = m.vw + Math.max(uHand, 0.2) * drapeW + drapeW * 0.15 + 40
       const t = (g - FLING_START) / (CURTAIN_GONE - 0.08 - FLING_START)
       center = lerp(center, Math.max(center, exit), clamp01(t) * clamp01(t))
@@ -133,7 +139,7 @@ export function curtainFrame(g: number, m: StageMetrics, count: number): Curtain
   const widths = new Array<number>(count)
   const shades = new Array<number>(count)
   for (let i = 0; i < count; i++) {
-    const rest = (i + 0.5) * stripW
+    const rest = flip((i + 0.5) * stripW)
     const u = rest / m.vw
     const phase = u * 7 * Math.PI - g * 9
     const fold = 0.03 * Math.sin(phase)
@@ -147,7 +153,7 @@ export function curtainFrame(g: number, m: StageMetrics, count: number): Curtain
       const lag = Math.abs(u - uHand) * GATHER_LAG
       p = smooth((g - GATHER_START - lag) / GATHER_DURATION)
     }
-    centers[i] = lerp(rest, target, p)
+    centers[i] = flip(lerp(rest, target, p))
     widths[i] = lerp(1, sxTarget, p) * stripW
     shades[i] = p * shadeTarget * (1 - drapeW / m.vw)
     bunch += p

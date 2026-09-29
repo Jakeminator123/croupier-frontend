@@ -19,14 +19,25 @@ type Phase = Clip | "leaving" | "done"
 const CLIPS: Clip[] = ["intro", "curtain", "outro"]
 const NEXT: Record<Clip, Phase> = { intro: "curtain", curtain: "outro", outro: "leaving" }
 const SRC: Record<Clip, string> = {
-  intro: "/videos/intro/astrid-intro.mp4",
-  curtain: "/videos/intro/astrid-curtain.mp4",
-  outro: "/videos/intro/astrid-outro.mp4",
+  intro: "/videos/intro/astrid-walk.mp4",
+  curtain: "/videos/intro/astrid-drag.mp4",
+  outro: "/videos/intro/astrid-natural.mp4",
 }
 /** If a clip has not finished by then it is stuck loading; the site must not stay covered. */
-const CLIP_TIMEOUT_MS: Record<Clip, number> = { intro: 16000, curtain: 10000, outro: 16000 }
+const CLIP_TIMEOUT_MS: Record<Clip, number> = { intro: 16000, curtain: 10000, outro: 12000 }
 const LEAVE_MS = 700
 const FRAME = { w: 960, h: 1280 }
+/**
+ * The walk-in clip is wider than the others: the standard frame sits at its right edge and she
+ * enters from well left of it, so on most screens she starts outside the viewport.
+ */
+const WALK = {
+  widthRatio: 1792 / 960,
+  /** Her right edge in the first frame, in frame widths from the standard frame's left edge. */
+  startRight: (317 - 832) / 960,
+  /** Seconds of walking; any extra distance a wide screen needs is added as a glide over this. */
+  walkEnd: 4.6,
+}
 
 // Survives client-side navigation and resets with a full page load: the intro is a loading screen,
 // so coming back from /demo should not replay it.
@@ -46,6 +57,7 @@ export function CurtainIntro() {
 
   const rootRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const avatarRef = useRef<HTMLDivElement>(null)
   const shadowRef = useRef<HTMLDivElement>(null)
   const videoRefs = useRef<Record<Clip, HTMLVideoElement | null>>({ intro: null, curtain: null, outro: null })
   const stripRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -136,15 +148,42 @@ export function CurtainIntro() {
     const prevX: number[] = []
     let prevTime = performance.now()
     let raf = 0
+    let shown: Clip = "intro"
+    let boxStyle = ""
+
+    // The box follows whichever clip is actually on the canvas, so a wide walk frame is never
+    // squeezed into the narrow box (or the reverse) while the next clip is still loading.
+    const layoutAvatar = (m: StageMetrics) => {
+      const box = avatarRef.current
+      if (!box) return
+      let left = m.videoLeft
+      let width = m.videoW
+      let shift = 0
+      if (shown === "intro") {
+        width = Math.round(m.videoW * WALK.widthRatio)
+        left = m.videoLeft + m.videoW - width
+        const walk = videoRefs.current.intro
+        const glide = Math.max(0, m.videoLeft + WALK.startRight * m.videoW + 24)
+        const t = walk ? Math.min(1, walk.currentTime / WALK.walkEnd) : 0
+        shift = -glide * (1 - t) ** 3
+      }
+      const next = `${left}|${width}|${shift.toFixed(1)}`
+      if (next === boxStyle) return
+      boxStyle = next
+      box.style.left = `${left}px`
+      box.style.width = `${width}px`
+      box.style.transform = shift ? `translateX(${shift.toFixed(1)}px)` : ""
+    }
 
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop)
       const current = phaseRef.current
       const clip = current === "intro" || current === "curtain" || current === "outro" ? current : null
       const video = clip ? videoRefs.current[clip] : null
-      if (video && renderer) renderer.draw(video)
+      if (clip && video && renderer?.draw(video)) shown = clip
 
       const m = metricsRef.current
+      if (m) layoutAvatar(m)
       const dt = Math.max(1 / 240, (now - prevTime) / 1000)
       prevTime = now
       if (!m || current !== "curtain" || goneRef.current || !video) return
@@ -256,14 +295,11 @@ export function CurtainIntro() {
       )}
 
       <div
+        ref={avatarRef}
         className="intro-avatar"
         aria-hidden="true"
         data-hidden={phase === "leaving" ? "" : undefined}
-        style={
-          metrics
-            ? { left: metrics.videoLeft, top: metrics.videoTop, width: metrics.videoW, height: metrics.videoH }
-            : { visibility: "hidden" }
-        }
+        style={metrics ? { top: metrics.videoTop, height: metrics.videoH } : { visibility: "hidden" }}
       >
         <canvas ref={canvasRef} width={FRAME.w} height={FRAME.h} />
         {CLIPS.map((clip) => (
