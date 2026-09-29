@@ -1,6 +1,16 @@
-# modern-landing-page
+# croupier-frontend
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+This is the separate Vercel frontend for Croupier. The landing page is built with
+[Next.js](https://nextjs.org) and [v0](https://v0.app). The `/demo` route now
+links to the real, server-owned Blackjack pilot at
+`https://croupier-v2.onrender.com/blackjack?dealer=astrid`. Render owns cards,
+shoe, balance, payouts, authentication, BO and Lab. The legacy client-only
+`BlackjackGame` component is not used by the public route.
+
+The full same-origin Vercel player frontend and proxy remain a separate migration.
+Before switching that on, use an isolated Render test backend and verify cookies,
+origin checks, media Range responses and a complete browser round. See the
+Croupier monorepo's `docs/VERCEL-FRONTEND-MIGRATION.md`.
 
 ## Built with v0
 

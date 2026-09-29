@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Twitter, Linkedin, Facebook, Instagram, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CardStream } from "@/components/landing/card-stream"
 import { CroupierRide } from "@/components/landing/croupier-ride"
@@ -11,9 +11,6 @@ import { Parallax } from "@/components/landing/parallax"
 import { PerspectiveFloor } from "@/components/landing/perspective-floor"
 import { parallaxStyle } from "@/components/landing/parallax-style"
 import { CurtainIntro } from "@/components/intro/curtain-intro"
-
-const socialIcon =
-  "h-5 w-5 cursor-pointer text-off transition-all duration-300 hover:text-lime hover:drop-shadow-[0_0_12px_var(--scout-lime)]"
 
 export default function Home() {
   return (
@@ -45,7 +42,7 @@ export default function Home() {
         <main className="relative z-10 flex flex-col items-center gap-12 px-6 pt-8 pb-32 md:px-16 lg:flex-row lg:items-center lg:justify-between lg:pt-12">
           <div className="max-w-2xl will-change-transform" style={parallaxStyle(4)}>
             <p className="mb-5 font-mono text-xs tracking-[0.25em] text-lime uppercase">
-              {"// AI Live Casino · Scout Gaming Group · Malta & UK Licensed"}
+              {"// Blackjackpilot · Scout Gaming Group"}
             </p>
             <h1 className="mb-6 text-5xl leading-[1.02] font-semibold tracking-tight text-off md:text-6xl lg:text-7xl">
               Möt Astrid.
@@ -55,9 +52,8 @@ export default function Home() {
               driven av AI.
             </h1>
             <p className="mb-10 max-w-xl text-base leading-relaxed text-off/75 md:text-lg">
-              Scout Gaming Groups AI live casino ger operatörer ett komplett blackjackbord: en croupier som pratar,
-              riktiga regler och samma integration, wallet och KYC som vår fantasy sport. Prova demot, inga riktiga
-              pengar.
+              Möt Astrid vid ett blackjackbord där spelservern sköter kort, sko, saldo och utbetalningar.
+              Den här piloten använder demokrediter och öppnar det riktiga spelet på Render.
             </p>
 
             <div className="mb-12 flex flex-wrap gap-4">
@@ -67,7 +63,7 @@ export default function Home() {
                 className="rounded-full bg-lime px-8 text-sm font-semibold tracking-wide text-ink uppercase transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_var(--scout-lime),0_0_40px_var(--scout-lime2)]"
               >
                 <Link href="/demo">
-                  Spela demo <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  Öppna blackjack <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </Button>
               <Button
@@ -93,21 +89,6 @@ export default function Home() {
 
           <HeroCard />
         </main>
-
-        <div className="absolute bottom-8 left-6 z-10 flex gap-6 md:bottom-12 md:left-16">
-          <a href="#" aria-label="Twitter">
-            <Twitter className={socialIcon} />
-          </a>
-          <a href="#" aria-label="LinkedIn">
-            <Linkedin className={socialIcon} />
-          </a>
-          <a href="#" aria-label="Facebook">
-            <Facebook className={socialIcon} />
-          </a>
-          <a href="#" aria-label="Instagram">
-            <Instagram className={socialIcon} />
-          </a>
-        </div>
 
         <p className="absolute right-6 bottom-8 z-10 font-mono text-[10px] tracking-[0.2em] text-steel uppercase md:right-16 md:bottom-12">
           {"// 18+ · Demo utan riktiga pengar · © Scout Gaming Group"}

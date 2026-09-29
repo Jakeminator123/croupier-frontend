@@ -20,19 +20,9 @@ export function SiteHeader() {
                 Start
               </Link>
             </li>
-            <li>
-              <a href="#bordet" className="transition-colors hover:text-foreground">
-                Bordet
-              </a>
-            </li>
-            <li>
-              <a href="#regler" className="transition-colors hover:text-foreground">
-                Regler
-              </a>
-            </li>
           </ul>
           <Button asChild size="sm" className="bg-lime font-mono text-xs tracking-widest text-ink uppercase hover:bg-lime2">
-            <Link href="/">Boka demo</Link>
+            <a href="https://croupier-v2.onrender.com/blackjack?dealer=astrid">Öppna bordet</a>
           </Button>
         </nav>
       </div>
