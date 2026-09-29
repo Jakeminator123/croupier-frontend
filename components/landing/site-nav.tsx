@@ -4,6 +4,7 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useFantasyMode, type SiteMode } from "./fantasy-mode"
+import { LogoLaser } from "./logo-laser"
 
 const PRIMARY: { label: string; href: string; mode: SiteMode; isNew?: boolean }[] = [
   { label: "Fantasy", href: "#", mode: "fantasy" },
@@ -24,9 +25,7 @@ export function SiteNav() {
   return (
     <header className="relative z-10 px-6 py-6 md:px-16 md:py-8">
       <nav aria-label="Huvudmeny" className="flex items-center justify-between gap-6">
-        <Link href="/" className="text-xl font-semibold tracking-tight text-off" aria-label="Scout Gaming Group, startsida">
-          scout<span className="text-lime">/</span>gaming
-        </Link>
+        <LogoLaser />
 
         <div className="hidden items-center gap-8 md:flex lg:gap-10">
           <ul className="flex items-center gap-8 lg:gap-10">
