@@ -21,9 +21,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Scout Gaming Group · AI Live Casino med Astrid",
+  title: "Scout Gaming Group · Blackjackpilot med Astrid",
   description:
-    "Scout Gaming Groups AI live casino. Möt Astrid, din AI-croupier i blackjack. Riktiga regler, samma integration som vår fantasy sport. Prova demot utan riktiga pengar.",
+    "Möt Astrid i en blackjackpilot med serverstyrt spel och demokrediter. Inga riktiga pengar.",
 }
 
 export const viewport: Viewport = {
