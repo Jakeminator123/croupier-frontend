@@ -100,7 +100,7 @@ export function IntroPlayingCard({ face, target, onDone }: { face: { x: number; 
         <p className="text-[10.9cqw] font-semibold tracking-tight text-off">
           scout<span className="text-lime">/</span>gaming
         </p>
-        <p className="font-mono text-[10px] tracking-[0.25em] text-off/50 uppercase">AI Live Casino</p>
+        <p className="font-mono text-[10px] tracking-[0.25em] text-off/50 uppercase">Blackjackpilot</p>
       </div>
     </div>
   )

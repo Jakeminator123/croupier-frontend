@@ -321,7 +321,7 @@ export function HeroCard() {
                     Spela <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                 </div>
-                <EndCard visible={ended.casino || introLogo} snap={introLogo} tagline="AI Live Casino" />
+                <EndCard visible={ended.casino || introLogo} snap={introLogo} tagline="Blackjackpilot" />
                 <div aria-hidden="true" className="absolute inset-0 mix-blend-soft-light" style={SHINE} />
               </div>
 

@@ -63,7 +63,7 @@ export function RetroSite() {
             <h1 className="retro-h1">Välkommen till Scout Gaming Group på Internet!</h1>
             <div className="retro-marquee">
               <span>
-                *** NYHET! Nu lanserar vi FANTASY SPORT online *** Live Casino med riktig croupier kommer 1999 *** Sidan ses
+                *** NYHET! Nu lanserar vi FANTASY SPORT online *** Digitalt blackjackbord kommer 1999 *** Sidan ses
                 bäst i Netscape Navigator 4.0 eller Internet Explorer 4.0 vid 800x600 *** Skriv gärna i vår gästbok! ***
               </span>
             </div>
@@ -75,10 +75,10 @@ export function RetroSite() {
                   <td className="retro-nav">
                     <div className="retro-nav-head">MENY</div>
                     {NAV.map((item) => (
-                      <a key={item} className="retro-nav-link" href="#">
+                      <span key={item} className="retro-nav-link">
                         » {item}
                         {item === "Live Casino" && <span className="retro-blink retro-new"> NYTT!</span>}
-                      </a>
+                      </span>
                     ))}
                     <div className="retro-nav-foot">
                       Sidan uppdaterades
@@ -91,9 +91,8 @@ export function RetroSite() {
                       <span>UNDER UPPBYGGNAD</span>
                     </div>
                     <p>
-                      Scout Gaming Group AB är ett ungt svenskt företag som utvecklar <b>spel- och tävlingslösningar</b> för
-                      Internet. Vi levererar kompletta system till speloperatörer i hela Norden, med licens på Malta och i
-                      Storbritannien.
+                      Scout Gaming Group AB utvecklar <b>spel- och tävlingslösningar</b> för Internet.
+                      Denna nostalgiska startsida är en animation som leder vidare till dagens blackjackpilot.
                     </p>
                     <h2 className="retro-h2">Våra produkter</h2>
                     <table className="retro-grid">
@@ -128,7 +127,7 @@ export function RetroSite() {
                     </table>
                     <p>
                       <span className="retro-blink retro-new">NYTT!</span> Ladda hem vårt informationsblad om Fantasy Sport
-                      (Word 6.0, 234 kB) eller <a href="#">skicka e-post till webmaster</a>.
+                      (Word 6.0, 234 kB) eller skriv till webmaster.
                     </p>
                     <div className="retro-counter">
                       Du är besökare nummer:
@@ -151,7 +150,7 @@ export function RetroSite() {
 
             <hr className="retro-hr" />
             <p className="retro-footer">
-              © 1998 Scout Gaming Group AB. Alla rättigheter förbehållna. · <a href="#">webmaster@scoutgaming.se</a> ·
+              © 1998 Scout Gaming Group AB. Alla rättigheter förbehållna. · webmaster@scoutgaming.se ·
               Sidan är optimerad för 800x600 och 256 färger.
             </p>
           </div>
