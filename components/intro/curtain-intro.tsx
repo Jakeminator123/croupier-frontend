@@ -26,24 +26,13 @@ const SRC: Record<Clip, string> = {
   outro: "/videos/intro/astrid-natural.mp4",
 }
 /** If a clip has not finished by then it is stuck loading; the site must not stay covered. */
-const CLIP_TIMEOUT_MS: Record<Clip, number> = { intro: 16000, curtain: 10000, outro: 12000 }
+const CLIP_TIMEOUT_MS: Record<Clip, number> = { intro: 10000, curtain: 10000, outro: 12000 }
 const LEAVE_MS = 700
 const FRAME = { w: 960, h: 1280 }
-/**
- * The walk-in clip is wider than the others: the standard frame sits at its right edge and she
- * takes ten identical steps toward it. Playback starts at whichever step puts her just outside
- * the viewport, so she always walks in at her own pace instead of being slid across wide screens.
- */
-const WALK = {
-  canvasW: 2396,
-  /** Her right edge on the first frame, in source pixels of the wide canvas. */
-  firstRight: 317,
-  /** Distance and duration of one step cycle. */
-  step: 151,
-  loopS: 0.8,
-  loops: 10,
-  walkEnd: 8,
-}
+/** She has walked in and turned to face us by this point in the walk clip (seconds). */
+const WALK_END = 6
+/** The seat ball rolls in behind her while she is still standing (natural clip, seconds). */
+const SEAT_ROLL = { start: 1.9, end: 3.6, distance: 1.8 }
 /** Her seated pose in the natural clip, in source pixels of the 960x1280 frame. */
 const SEAT = {
   /** She has sat down and gone still by this point in the clip (seconds). */
@@ -106,16 +95,6 @@ function measureStage(root: HTMLElement): StageMetrics {
   return computeMetrics(vw, vh, hero ? hero.left + hero.width / 2 : undefined)
 }
 
-/** Which step to start the walk on, plus any glide still needed on screens wider than ten steps. */
-function walkPlan(m: StageMetrics) {
-  const scale = m.videoW / FRAME.w
-  const boxLeft = m.videoLeft + m.videoW - (m.videoW * WALK.canvasW) / FRAME.w
-  const rightAt = (step: number) => boxLeft + (WALK.firstRight + step * WALK.step) * scale
-  const ideal = Math.floor(((-12 - boxLeft) / scale - WALK.firstRight) / WALK.step)
-  const step = Math.max(0, Math.min(WALK.loops - 1, ideal))
-  return { start: step * WALK.loopS, glide: Math.max(0, rightAt(step) + 12) }
-}
-
 type Seat = { card: Box; seat: Box }
 
 /**
@@ -135,12 +114,12 @@ export function CurtainIntro() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
   const shadowRef = useRef<HTMLDivElement>(null)
+  const seatBallRef = useRef<HTMLDivElement>(null)
   const videoRefs = useRef<Record<Clip, HTMLVideoElement | null>>({ intro: null, curtain: null, outro: null })
   const stripRefs = useRef<(HTMLDivElement | null)[]>([])
   const shadeRefs = useRef<(HTMLDivElement | null)[]>([])
   const phaseRef = useRef<Phase>("intro")
   const metricsRef = useRef<StageMetrics | null>(null)
-  const walkRef = useRef({ start: 0, glide: 0 })
   const seatRef = useRef<Seat | null>(null)
   const goneRef = useRef(false)
   const startedAt = useRef(0)
@@ -194,13 +173,15 @@ export function CurtainIntro() {
     setPhase("card")
   }, [])
 
+  // The walk clip ends on a long idle; the curtain starts as soon as she faces us.
+  const walkedIn = useCallback(() => setPhase((current) => (current === "intro" ? "curtain" : current)), [])
+
   // One clip per phase; the next phase starts when the clip ends.
   useEffect(() => {
     if (phase !== "intro" && phase !== "curtain" && phase !== "outro") return
     const video = videoRefs.current[phase]
     if (!video) return
     const m = metricsRef.current
-    if (phase === "intro" && m) walkRef.current = walkPlan(m)
     if (phase === "outro") {
       if (!goneRef.current) {
         goneRef.current = true
@@ -215,10 +196,11 @@ export function CurtainIntro() {
     // Backs up the per-frame check in throttled tabs, where animation frames can be rare.
     const seated = () => {
       if (phase === "outro" && video.currentTime >= SEAT.settled) dealCard()
+      if (phase === "intro" && video.currentTime >= WALK_END) walkedIn()
     }
     const bail = () => setPhase("leaving")
     const guard = setTimeout(bail, CLIP_TIMEOUT_MS[phase])
-    video.currentTime = phase === "intro" ? walkRef.current.start : 0
+    video.currentTime = 0
     video.addEventListener("ended", advance)
     video.addEventListener("timeupdate", seated)
     video.addEventListener("error", bail)
@@ -229,7 +211,7 @@ export function CurtainIntro() {
       video.removeEventListener("timeupdate", seated)
       video.removeEventListener("error", bail)
     }
-  }, [phase, dealCard])
+  }, [phase, dealCard, walkedIn])
 
   useEffect(() => {
     if (phase !== "leaving") return
@@ -263,8 +245,7 @@ export function CurtainIntro() {
     let shown: Clip = "intro"
     let boxStyle = ""
 
-    // The box follows whichever clip is actually on the canvas, so a wide walk frame is never
-    // squeezed into the narrow box (or the reverse) while the next clip is still loading.
+    // The box follows whichever clip is actually on the canvas.
     const layoutAvatar = (m: StageMetrics) => {
       const box = avatarRef.current
       if (!box) return
@@ -272,14 +253,8 @@ export function CurtainIntro() {
       let top = m.videoTop
       let width = m.videoW
       let height = m.videoH
-      let shift = 0
-      if (shown === "intro") {
-        width = Math.round((m.videoW * WALK.canvasW) / FRAME.w)
-        left = m.videoLeft + m.videoW - width
-        const walk = videoRefs.current.intro
-        const { start, glide } = walkRef.current
-        if (glide > 0 && walk) shift = -glide * (1 - clamp01((walk.currentTime - start) / (WALK.walkEnd - start)))
-      } else if (shown === "outro" && seatRef.current) {
+      let roll = 1
+      if (shown === "outro" && seatRef.current) {
         // She drifts to her seat while turning photoreal and sitting down.
         const t = videoRefs.current.outro?.currentTime ?? 0
         const p = smooth((t - SEAT.moveStart) / (SEAT.moveEnd - SEAT.moveStart))
@@ -288,15 +263,25 @@ export function CurtainIntro() {
         top = lerp(m.videoTop, seat.top, p)
         width = lerp(m.videoW, seat.width, p)
         height = lerp(m.videoH, seat.height, p)
+        roll = clamp01((t - SEAT_ROLL.start) / (SEAT_ROLL.end - SEAT_ROLL.start))
       }
-      const next = `${left.toFixed(1)}|${top.toFixed(1)}|${width.toFixed(1)}|${height.toFixed(1)}|${shift.toFixed(1)}`
+      const ball = seatBallRef.current
+      if (ball) {
+        const visible = shown === "outro"
+        // Decelerates like a ball losing momentum, and spins by the distance it covers.
+        const remaining = visible ? (1 - roll) * (1 - roll) : 1
+        ball.style.opacity = visible ? "1" : "0"
+        ball.style.transform = `translateX(${(remaining * SEAT_ROLL.distance * 100).toFixed(2)}%)`
+        ball.style.setProperty("--spin", `${(-(remaining * SEAT_ROLL.distance * 360) / Math.PI).toFixed(1)}deg`)
+      }
+      box.toggleAttribute("data-entering", shown === "intro")
+      const next = `${left.toFixed(1)}|${top.toFixed(1)}|${width.toFixed(1)}|${height.toFixed(1)}`
       if (next === boxStyle) return
       boxStyle = next
       box.style.left = `${left.toFixed(1)}px`
       box.style.top = `${top.toFixed(1)}px`
       box.style.width = `${width.toFixed(1)}px`
       box.style.height = `${height.toFixed(1)}px`
-      box.style.transform = shift ? `translateX(${shift.toFixed(1)}px)` : ""
     }
 
     const loop = (now: number) => {
@@ -314,6 +299,7 @@ export function CurtainIntro() {
       const m = metricsRef.current
       if (m) layoutAvatar(m)
       if (current === "outro" && video && video.currentTime >= SEAT.settled) dealCard()
+      if (current === "intro" && video && video.currentTime >= WALK_END) walkedIn()
       const dt = Math.max(1 / 240, (now - prevTime) / 1000)
       prevTime = now
       if (!m || current !== "curtain" || goneRef.current || !video) return
@@ -324,13 +310,13 @@ export function CurtainIntro() {
       for (let i = 0; i < count; i++) {
         const strip = stripRefs.current[i]
         if (!strip) continue
-        const { x, sx, shade } = frame.poses[i]
+        const { x, y, sx, shade } = frame.poses[i]
         const vx = (x - (prevX[i] ?? x)) / dt
         prevX[i] = x
         // The hem trails the grip: fast strips lean away from their direction of travel.
         const targetSkew = Math.max(-24, Math.min(24, -vx * 0.011))
         skews[i] = (skews[i] ?? 0) + (targetSkew - (skews[i] ?? 0)) * 0.3
-        strip.style.transform = `translateX(${x.toFixed(2)}px) skewX(${skews[i].toFixed(2)}deg) scaleX(${sx.toFixed(4)})`
+        strip.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) skewX(${skews[i].toFixed(2)}deg) scaleX(${sx.toFixed(4)})`
         const shadeEl = shadeRefs.current[i]
         if (shadeEl) shadeEl.style.opacity = shade.toFixed(3)
       }
@@ -342,7 +328,7 @@ export function CurtainIntro() {
       }
       const root = rootRef.current
       if (root && g >= LAYER_SWITCH && !root.hasAttribute("data-above")) root.setAttribute("data-above", "")
-      if (g >= CURTAIN_GONE) {
+      if (frame.gone || g >= CURTAIN_GONE) {
         goneRef.current = true
         setCurtainGone(true)
       }
@@ -352,7 +338,7 @@ export function CurtainIntro() {
       cancelAnimationFrame(raf)
       renderer?.dispose()
     }
-  }, [active, dealCard])
+  }, [active, dealCard, walkedIn])
 
   const count = metrics ? stripCount(metrics.vw) : 0
   const strips = useMemo(() => {
@@ -431,6 +417,15 @@ export function CurtainIntro() {
         data-hidden={phase === "leaving" ? "" : undefined}
         style={metrics ? undefined : { visibility: "hidden" }}
       >
+        <div ref={seatBallRef} className="intro-seat">
+          <div className="intro-seat-shadow" />
+          <div className="intro-seat-ball">
+            <svg viewBox="0 0 100 100" className="intro-seat-seams">
+              <polygon points="50,34 65.2,45.1 59.4,62.9 40.6,62.9 34.8,45.1" className="intro-seat-panel" />
+              <path d="M50 34V2M65.2 45.1L95.6 35.2M59.4 62.9L78.2 88.8M40.6 62.9L21.8 88.8M34.8 45.1L4.4 35.2" />
+            </svg>
+          </div>
+        </div>
         <canvas ref={canvasRef} width={FRAME.w} height={FRAME.h} />
         {CLIPS.map((clip) => (
           <video
