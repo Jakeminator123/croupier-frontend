@@ -10,6 +10,7 @@ import { HeroCard } from "@/components/landing/hero-card"
 import { Parallax } from "@/components/landing/parallax"
 import { PerspectiveFloor } from "@/components/landing/perspective-floor"
 import { parallaxStyle } from "@/components/landing/parallax-style"
+import { CurtainIntro } from "@/components/intro/curtain-intro"
 
 const socialIcon =
   "h-5 w-5 cursor-pointer text-off transition-all duration-300 hover:text-lime hover:drop-shadow-[0_0_12px_var(--scout-lime)]"
@@ -112,6 +113,7 @@ export default function Home() {
           {"// 18+ · Demo utan riktiga pengar · © Scout Gaming Group"}
         </p>
       </div>
+      <CurtainIntro />
     </FantasyModeProvider>
   )
 }
