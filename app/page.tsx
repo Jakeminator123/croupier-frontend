@@ -49,7 +49,7 @@ export default function Home() {
               <br />
               <span className="text-lime">Live blackjack</span>
               <br />
-              med Astrid.
+              i vår pilot.
             </h1>
             <p className="mb-10 max-w-xl text-base leading-relaxed text-off/75 md:text-lg">
               Möt Astrid vid ett blackjackbord där spelservern sköter kort, sko, saldo och utbetalningar.
